@@ -1002,6 +1002,53 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
 .five-add button svg { width: 16px; height: 16px; }
 .five-add.disabled button { opacity: .35; pointer-events: none; }
 
+/* ---------------------------------------------------------------------- */
+/* Profile / registration — role badge, invite codes, group management     */
+/* ---------------------------------------------------------------------- */
+
+.role-badge {
+  display: inline-flex; align-items: center;
+  padding: 6px 14px; border-radius: 999px;
+  background: var(--ink); color: var(--paper);
+  font-size: 13px; font-weight: 700;
+}
+
+.field-stack { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-3); }
+.field-input {
+  width: 100%; box-sizing: border-box;
+  border: 1px solid var(--line);
+  background: var(--paper); color: var(--ink);
+  border-radius: var(--radius-sm);
+  padding: 11px 14px; font: inherit; font-size: 14px;
+  outline: none;
+}
+.field-input::placeholder { color: var(--tg-hint); }
+
+.btn.full { display: flex; width: 100%; }
+.btn:disabled { opacity: .5; }
+
+.group-row {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+  padding: var(--space-3) 0; border-bottom: 1px solid var(--line);
+}
+.group-row:last-child { border-bottom: none; }
+.group-row-body p { margin: 0; font-size: 13px; line-height: 1.4; }
+.group-row-body span { color: var(--tg-hint); font-size: 12px; }
+.group-row .btn { padding: 8px 14px; font-size: 12.5px; flex: none; }
+
+.code-display {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
+  background: var(--ink); color: var(--paper);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px; margin-top: var(--space-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 15px; font-weight: 700; letter-spacing: 0.03em;
+}
+.code-display button {
+  flex: none; border: 1px solid rgba(255,255,255,.35); background: transparent; color: var(--paper);
+  border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 700;
+}
+
 .five-empty { text-align: center; padding: var(--space-6) var(--space-4); color: var(--tg-hint); font-size: 13.5px; }
 .five-verse { margin-top: var(--space-4); padding: var(--space-4); border-radius: var(--radius-md); background: var(--tg-secondary-bg); }
 .five-verse p { font-size: 13.5px; font-style: italic; line-height: 1.5; margin: 0 0 4px; color: var(--ink-soft); }

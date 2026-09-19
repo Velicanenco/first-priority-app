@@ -10,6 +10,10 @@ const state = {
   sheetMode: null, // 'week' | 'testimony'
   sheetWeek: null,
   navStack: [], // {type:'page', key} | {type:'sheet'} — mirrors browser history depth
+  me: null, // backend profile: { telegram_id, first_name, username, role, country, group }
+  meStatus: "idle", // idle | loading | loaded | no-telegram | error
+  groups: [], // coordinator/admin: groups visible to them (GET /api/groups)
+  lastCode: null, // most recently generated invite code, shown until the page re-renders past it
 };
 
 const el = {
@@ -564,6 +568,8 @@ function renderTeam() {
       </div>
     </div>
 
+    ${renderAccountSection()}
+
     <div class="section fade-in">
       <div class="card" style="padding:0 var(--space-4)">
         ${navRow({ icon: ICONS.book, title: d.resourcesTitle, desc: d.resourcesLabel, key: "team-resources" })}
@@ -582,7 +588,270 @@ function renderTeam() {
   `;
   wirePushRows(el.pages.team);
   wireAccordions(el.pages.team);
+  wireAccountSection(el.pages.team);
   window.wireUpPressFeedback(el.pages.team);
+}
+
+/* ------------------------------------------------------------------ */
+/* PROFILE / REGISTRATION — real Telegram-verified role, backed by the  */
+/* first-priority-backend service. No separate "sign up" screen: the    */
+/* very first verified request for a telegram_id silently registers    */
+/* them server-side as a plain "participant" (see requireAuth.js). A    */
+/* participant can only become a leader/coordinator by redeeming a code */
+/* that a coordinator/admin generated for them — never by picking a     */
+/* role themselves.                                                     */
+/* ------------------------------------------------------------------ */
+
+async function loadMe() {
+  if (!window.__tg?.initData) {
+    // Running outside Telegram (plain browser preview) — there is no
+    // signed initData to authenticate with, so there is nothing to load.
+    state.meStatus = "no-telegram";
+    if (state.tab === "team") renderTeam();
+    return;
+  }
+  state.meStatus = "loading";
+  if (state.tab === "team") renderTeam();
+  try {
+    state.me = await window.fpApi.me();
+    state.meStatus = "loaded";
+    if (state.me.role === "coordinator" || state.me.role === "admin") {
+      await refreshGroups();
+    }
+  } catch (err) {
+    console.error("[first-priority-app] loadMe failed:", err);
+    state.meStatus = "error";
+  }
+  renderTeam();
+  if (state.tab === "team") window.wireUpPressFeedback(el.pages.team);
+}
+
+async function refreshGroups() {
+  try {
+    state.groups = await window.fpApi.listGroups();
+  } catch (err) {
+    console.error("[first-priority-app] refreshGroups failed:", err);
+    state.groups = [];
+  }
+}
+
+function roleLabel(role) {
+  const roles = t().account.roles;
+  return roles[role] || role;
+}
+
+function renderAccountSection() {
+  const d = t().account;
+
+  if (state.meStatus === "no-telegram") {
+    return `
+      <div class="section fade-in">
+        <div class="myfive-mini"><p>${esc(d.offlineNotice)}</p></div>
+      </div>`;
+  }
+  if (state.meStatus === "idle" || state.meStatus === "loading") {
+    return `
+      <div class="section fade-in">
+        <div class="myfive-mini"><p>${esc(d.loading)}</p></div>
+      </div>`;
+  }
+  if (state.meStatus === "error") {
+    return `
+      <div class="section fade-in">
+        <div class="myfive-mini">
+          <p>${esc(d.errorNotice)}</p>
+          <button class="btn secondary tg-press" id="meRetryBtn">${esc(d.retryBtn)}</button>
+        </div>
+      </div>`;
+  }
+
+  const me = state.me;
+  let groupBlock = "";
+  if (me.role === "leader") {
+    groupBlock = me.group
+      ? `<p class="section-text" style="margin:8px 0 0">${esc(d.groupLabel)}: <b>${esc(me.group.name)}</b></p>`
+      : `<p class="section-text" style="margin:8px 0 0">${esc(d.noGroup)}</p>`;
+  }
+
+  let redeemBlock = "";
+  if (me.role !== "admin") {
+    redeemBlock = `
+      <div class="card" style="margin-top:var(--space-3)">
+        <h4 style="margin:0 0 4px">${esc(d.redeemTitle)}</h4>
+        <p class="section-text" style="margin:0">${esc(d.redeemText)}</p>
+        <div class="five-add" id="redeemRow">
+          <input type="text" id="redeemInput" placeholder="${esc(d.redeemPlaceholder)}" maxlength="16" style="text-transform:uppercase" />
+          <button id="redeemBtn" class="tg-press" aria-label="${esc(d.redeemBtn)}">${ICONS.check}</button>
+        </div>
+      </div>`;
+  }
+
+  const adminBlock = (me.role === "coordinator" || me.role === "admin") ? renderAdminTools(me, d) : "";
+
+  return `
+    <div class="section fade-in">
+      <p class="section-label">${esc(d.title)}</p>
+      <div class="card" style="padding:var(--space-4)">
+        <span class="role-badge">${esc(roleLabel(me.role))}</span>
+        ${me.country ? `<p class="section-text" style="margin:8px 0 0">${esc(d.countryLabel)}: ${esc(me.country)}</p>` : ""}
+        ${groupBlock}
+      </div>
+      ${redeemBlock}
+      ${adminBlock}
+    </div>`;
+}
+
+function renderAdminTools(me, d) {
+  const codeBlock = state.lastCode ? `
+    <div class="card" style="margin-top:var(--space-3)">
+      <p class="section-label" style="margin:0 0 4px">${esc(d.codeGenerated)}</p>
+      <div class="code-display">
+        <span>${esc(state.lastCode)}</span>
+        <button data-copy-code="${esc(state.lastCode)}">${esc(d.copyBtn)}</button>
+      </div>
+      <p class="section-text" style="margin:8px 0 0;font-size:12.5px">${esc(d.codeShareHint)}</p>
+    </div>` : "";
+
+  const countryField = me.role === "admin"
+    ? `<input type="text" id="newGroupCountry" class="field-input" placeholder="${esc(d.countryPlaceholder)}" />`
+    : `<input type="hidden" id="newGroupCountry" value="${esc(me.country || "")}" />`;
+
+  const groupsListHtml = state.groups.length
+    ? state.groups.map((g) => `
+        <div class="group-row">
+          <div class="group-row-body"><p><b>${esc(g.name)}</b></p><span>${esc(g.country)}</span></div>
+          <button class="btn tg-press" data-invite-leader="${esc(g.id)}">${esc(d.inviteLeaderBtn)}</button>
+        </div>
+      `).join("")
+    : `<p class="section-text" style="margin:0">${esc(d.noGroupsYet)}</p>`;
+
+  const coordInviteBlock = me.role === "admin" ? `
+    <div class="card" style="margin-top:var(--space-3)">
+      <h4 style="margin:0 0 4px">${esc(d.inviteCoordinatorTitle)}</h4>
+      <div class="field-stack">
+        <input type="text" id="coordCountryInput" class="field-input" placeholder="${esc(d.countryPlaceholder)}" />
+        <button id="coordInviteBtn" class="btn full tg-press">${esc(d.inviteCoordinatorBtn)}</button>
+      </div>
+    </div>` : "";
+
+  return `
+    ${codeBlock}
+    <div class="card" style="margin-top:var(--space-3)">
+      <h4 style="margin:0 0 4px">${esc(d.createGroupTitle)}</h4>
+      <div class="field-stack">
+        <input type="text" id="newGroupName" class="field-input" placeholder="${esc(d.groupNamePlaceholder)}" />
+        ${countryField}
+        <button id="createGroupBtn" class="btn full tg-press">${esc(d.createGroupBtn)}</button>
+      </div>
+    </div>
+    <div class="card" style="margin-top:var(--space-3)">
+      <h4 style="margin:0 0 8px">${esc(d.yourGroupsTitle)}</h4>
+      <div id="groupsList">${groupsListHtml}</div>
+    </div>
+    ${coordInviteBlock}
+  `;
+}
+
+function wireAccountSection(root) {
+  const retryBtn = root.querySelector("#meRetryBtn");
+  if (retryBtn) retryBtn.addEventListener("click", () => loadMe());
+
+  const redeemBtn = root.querySelector("#redeemBtn");
+  const redeemInput = root.querySelector("#redeemInput");
+  if (redeemBtn && redeemInput) {
+    const doRedeem = async () => {
+      const code = redeemInput.value.trim();
+      if (!code) return;
+      redeemBtn.disabled = true;
+      try {
+        await window.fpApi.redeemInvite(code);
+        toast(t().account.redeemSuccess, ICONS.check);
+        window.haptic.notification("success");
+        await loadMe();
+      } catch (err) {
+        const key = err?.data?.error;
+        const msg = (key && t().account.redeemErrors[key]) || t().account.redeemErrors.default;
+        toast(msg, ICONS.close);
+        window.haptic.notification("error");
+        redeemBtn.disabled = false;
+      }
+    };
+    redeemBtn.addEventListener("click", doRedeem);
+    redeemInput.addEventListener("keydown", (e) => { if (e.key === "Enter") doRedeem(); });
+  }
+
+  const createGroupBtn = root.querySelector("#createGroupBtn");
+  if (createGroupBtn) {
+    createGroupBtn.addEventListener("click", async () => {
+      const name = root.querySelector("#newGroupName")?.value.trim();
+      const country = root.querySelector("#newGroupCountry")?.value.trim();
+      if (!name || !country) return;
+      createGroupBtn.disabled = true;
+      try {
+        await window.fpApi.createGroup(name, country);
+        window.haptic.notification("success");
+        await refreshGroups();
+        renderTeam();
+        window.wireUpPressFeedback(el.pages.team);
+        toast(t().account.groupCreated, ICONS.check);
+      } catch (err) {
+        toast(t().account.errorNotice, ICONS.close);
+        window.haptic.notification("error");
+        createGroupBtn.disabled = false;
+      }
+    });
+  }
+
+  root.querySelectorAll("[data-invite-leader]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      btn.disabled = true;
+      try {
+        const res = await window.fpApi.inviteLeader(btn.dataset.inviteLeader);
+        state.lastCode = res.code;
+        renderTeam();
+        window.wireUpPressFeedback(el.pages.team);
+        toast(t().account.codeGenerated, ICONS.check);
+        window.haptic.notification("success");
+      } catch (err) {
+        toast(t().account.errorNotice, ICONS.close);
+        window.haptic.notification("error");
+        btn.disabled = false;
+      }
+    });
+  });
+
+  const coordInviteBtn = root.querySelector("#coordInviteBtn");
+  if (coordInviteBtn) {
+    coordInviteBtn.addEventListener("click", async () => {
+      const country = root.querySelector("#coordCountryInput")?.value.trim();
+      if (!country) return;
+      coordInviteBtn.disabled = true;
+      try {
+        const res = await window.fpApi.inviteCoordinator(country);
+        state.lastCode = res.code;
+        renderTeam();
+        window.wireUpPressFeedback(el.pages.team);
+        toast(t().account.codeGenerated, ICONS.check);
+        window.haptic.notification("success");
+      } catch (err) {
+        toast(t().account.errorNotice, ICONS.close);
+        window.haptic.notification("error");
+        coordInviteBtn.disabled = false;
+      }
+    });
+  }
+
+  root.querySelectorAll("[data-copy-code]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const code = btn.dataset.copyCode;
+      const done = () => toast(t().account.copied, ICONS.check);
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(code).then(done).catch(done);
+      } else {
+        done();
+      }
+    });
+  });
 }
 
 function registerTeamSubpages() {
@@ -834,6 +1103,7 @@ async function boot() {
     setLang(CURRENT_LANG, { silent: true });
     wireChrome();
     switchTab("home");
+    loadMe(); // fire-and-forget: fills in the Team tab's profile card once it resolves
   } catch (err) {
     console.error("[first-priority-app] boot() failed:", err);
     hideSplash();
