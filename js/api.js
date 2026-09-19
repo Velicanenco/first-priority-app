@@ -14,17 +14,29 @@
 (function () {
   const BACKEND_URL = "https://first-priority-global.onrender.com";
 
+  // The backend runs on Render's free tier, which spins the service down
+  // after ~15 minutes idle. The FIRST request after that has to wait for a
+  // cold start (usually well under a minute, occasionally longer) — without
+  // a bound on that wait, a stalled connection just sits there forever and
+  // the UI looks frozen ("Checking Telegram data…" with no way out). This
+  // timeout guarantees every call eventually resolves to a real error the
+  // UI can show a retry button for, instead of hanging indefinitely.
+  const TIMEOUT_MS = 55000;
+
   function getInitData() {
     return (typeof window !== "undefined" && window.__tg?.initData) || "";
   }
 
-  async function apiFetch(path, { method = "GET", body } = {}) {
+  async function apiFetch(path, { method = "GET", body, timeoutMs = TIMEOUT_MS } = {}) {
     const initData = getInitData();
     if (!initData) {
       const err = new Error("no-telegram-context");
       err.code = "NO_INIT_DATA";
       throw err;
     }
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
 
     let res;
     try {
@@ -35,12 +47,16 @@
           Authorization: "tma " + initData,
         },
         body: body !== undefined ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
       });
     } catch (networkErr) {
-      const err = new Error("network-error");
-      err.code = "NETWORK_ERROR";
+      const isAbort = networkErr && networkErr.name === "AbortError";
+      const err = new Error(isAbort ? "timeout" : "network-error");
+      err.code = isAbort ? "TIMEOUT" : "NETWORK_ERROR";
       err.cause = networkErr;
       throw err;
+    } finally {
+      clearTimeout(timer);
     }
 
     let data = null;
@@ -62,5 +78,7 @@
     createGroup: (name, country) => apiFetch("/api/groups", { method: "POST", body: { name, country } }),
     inviteLeader: (group_id) => apiFetch("/api/invites/leader", { method: "POST", body: { group_id } }),
     inviteCoordinator: (country) => apiFetch("/api/invites/coordinator", { method: "POST", body: { country } }),
+    getFive: () => apiFetch("/api/five"),
+    saveFive: (entries) => apiFetch("/api/five", { method: "PUT", body: { entries } }),
   };
 })();

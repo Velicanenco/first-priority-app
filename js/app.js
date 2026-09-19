@@ -652,7 +652,7 @@ function renderAccountSection() {
   if (state.meStatus === "idle" || state.meStatus === "loading") {
     return `
       <div class="section fade-in">
-        <div class="myfive-mini"><p>${esc(d.loading)}</p></div>
+        <div class="myfive-mini"><p>${esc(d.loading)}</p><p style="margin-top:6px">${esc(d.loadingHint)}</p></div>
       </div>`;
   }
   if (state.meStatus === "error") {
@@ -934,14 +934,42 @@ function registerTeamSubpages() {
 
 function uid() { return Math.random().toString(36).slice(2, 9); }
 
+// "My 5" used to live only in Telegram CloudStorage (or a plain in-memory
+// object when CloudStorage wasn't available) — that's why entries could
+// silently disappear between sessions. It now lives on the backend, tied
+// to the same verified Telegram identity as the rest of the app, so it
+// survives reopens, reinstalls, and different devices. The local cache
+// below is only a fallback for when the backend can't be reached (offline,
+// cold start still warming up, dev preview outside Telegram) — the backend
+// is always the source of truth once it answers.
 async function loadFive() {
+  if (window.__tg?.initData) {
+    try {
+      const res = await window.fpApi.getFive();
+      state.five = res.entries || [];
+      window.tgStorage.set("fp_five_list", JSON.stringify(state.five));
+      return;
+    } catch (err) {
+      console.error("[first-priority-app] loadFive: backend unavailable, using local cache:", err);
+    }
+  }
   const raw = await window.tgStorage.get("fp_five_list");
   if (raw) {
     try { state.five = JSON.parse(raw); } catch (e) { state.five = []; }
   }
 }
 async function saveFive() {
+  // Always cache locally first so nothing is lost even if the network call
+  // below fails outright.
   await window.tgStorage.set("fp_five_list", JSON.stringify(state.five));
+  if (window.__tg?.initData) {
+    try {
+      await window.fpApi.saveFive(state.five);
+    } catch (err) {
+      console.error("[first-priority-app] saveFive: backend unavailable, saved locally only:", err);
+      toast(t().five.syncError, ICONS.close);
+    }
+  }
 }
 
 function initials(name) {
@@ -1099,10 +1127,18 @@ async function boot() {
     registerFishSubpages();
     registerTeamSubpages();
 
-    await loadFive();
+    // Render immediately with whatever's in memory (an empty "My 5" list
+    // the first time render happens) rather than blocking the whole boot
+    // on a network call — the backend can take up to ~55s to answer on a
+    // cold start, and the app must not sit blank that whole time.
     setLang(CURRENT_LANG, { silent: true });
     wireChrome();
     switchTab("home");
+
+    loadFive().then(() => {
+      renderFive();
+      window.wireUpPressFeedback(el.pages.five);
+    }); // fire-and-forget: fills in the real "My 5" list once the backend answers
     loadMe(); // fire-and-forget: fills in the Team tab's profile card once it resolves
   } catch (err) {
     console.error("[first-priority-app] boot() failed:", err);
