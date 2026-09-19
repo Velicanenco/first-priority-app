@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>First Priority · FISH</title>
+<meta name="description" content="First Priority — FISH cycle mini app" />
+<meta name="theme-color" content="#0c0c0c" />
+<script src="https://telegram.org/js/telegram-web-app.js" defer></script>
+<link rel="stylesheet" href="css/style.css" />
+<link rel="icon" href="assets/img/logo-mark.png" />
+</head>
+<body>
+
+<!-- The .device wrapper is the single source of truth for width/centering.
+     A transform on it makes it the containing block for every
+     position:fixed descendant (splash, tabbar, sheet, toast), so fixed
+     elements size themselves against THIS box instead of the raw
+     viewport — which is what kept drifting out of alignment with the
+     scrollbar-affected flow layout. On an actual phone .device is simply
+     100% wide, so nothing changes there. -->
+<div class="device" id="device">
+
+  <!-- ===================== SPLASH ===================== -->
+  <div id="splash">
+    <div class="splash-bg"></div>
+    <div class="splash-scrim"></div>
+    <div class="splash-content">
+      <img class="splash-word" src="assets/img/logo.png" alt="First Priority" />
+      <div class="splash-tag">THE HOPE OF JESUS CHRIST<br/>IN THE NEXT GENERATION</div>
+      <div class="splash-bar"><div class="splash-bar-fill"></div></div>
+    </div>
+  </div>
+  <script>
+    // Failsafe: guarantee the splash screen always disappears, even if a
+    // later script errors out. app.js does the clean, timed transition in
+    // the normal case — this is just a backstop so nobody gets stuck.
+    window.setTimeout(function () {
+      var s = document.getElementById("splash");
+      var a = document.getElementById("app");
+      if (s && !s.classList.contains("leaving")) {
+        s.classList.add("leaving");
+        if (a) a.classList.add("ready");
+        window.setTimeout(function () { s.style.display = "none"; }, 600);
+      }
+    }, 6000);
+  </script>
+
+  <!-- ===================== APP SHELL ===================== -->
+  <div id="app">
+
+    <header class="topbar">
+      <div class="topbar-brand">
+        <img class="topbar-brand-word" src="assets/img/logo.png" alt="First Priority" />
+      </div>
+      <div class="lang-switch" id="langSwitch" role="tablist" aria-label="Language">
+        <button class="lang-btn tg-press" data-lang="ru">RU</button>
+        <button class="lang-btn tg-press" data-lang="en">EN</button>
+        <button class="lang-btn tg-press" data-lang="ro">RO</button>
+        <button class="lang-btn tg-press" data-lang="uk">UA</button>
+      </div>
+    </header>
+
+    <main>
+      <!-- ============ PAGE: HOME ============ -->
+      <section class="page" id="page-home"></section>
+
+      <!-- ============ PAGE: FISH ============ -->
+      <section class="page" id="page-fish"></section>
+
+      <!-- ============ PAGE: TEAM ============ -->
+      <section class="page" id="page-team"></section>
+
+      <!-- ============ PAGE: FIVE ============ -->
+      <section class="page" id="page-five"></section>
+    </main>
+
+    <nav class="tabbar" id="tabbar">
+      <button class="tab-btn tg-press" data-tab="home" id="navHomeBtn"></button>
+      <button class="tab-btn tg-press" data-tab="fish" id="navFishBtn"></button>
+      <button class="tab-btn tg-press" data-tab="team" id="navTeamBtn"></button>
+      <button class="tab-btn tg-press" data-tab="five" id="navFiveBtn"></button>
+    </nav>
+
+  </div>
+
+  <!-- ===================== PUSHED SUB-PAGES (real "back" stack) ===================== -->
+  <div id="stackRoot"></div>
+
+  <!-- ===================== SHEET (week detail / testimony) ===================== -->
+  <div class="sheet-backdrop" id="sheetBackdrop"></div>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <h2 id="sheetTitle"></h2>
+      <button class="sheet-close tg-press" id="sheetCloseBtn"></button>
+    </div>
+    <div class="sheet-body" id="sheetBody"></div>
+  </div>
+
+  <div id="toast"></div>
+
+</div>
+
+<script src="js/telegram-init.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
