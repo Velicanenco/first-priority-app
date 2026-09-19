@@ -644,9 +644,15 @@ function renderAccountSection() {
   const d = t().account;
 
   if (state.meStatus === "no-telegram") {
+    // Temporary debug line so a screenshot tells us WHICH thing is
+    // actually missing (script never loaded vs. WebApp exists but
+    // initData is empty, e.g. opened as a plain link instead of a real
+    // Web App launch) instead of us having to guess blind. Safe to
+    // remove once the real-Telegram issue is confirmed fixed.
+    const dbg = `[dbg] Telegram=${!!window.Telegram} WebApp=${!!window.Telegram?.WebApp} initData.len=${(window.Telegram?.WebApp?.initData || "").length} __tg=${!!window.__tg}`;
     return `
       <div class="section fade-in">
-        <div class="myfive-mini"><p>${esc(d.offlineNotice)}</p></div>
+        <div class="myfive-mini"><p>${esc(d.offlineNotice)}</p><p style="margin-top:6px;font-size:11px;opacity:.6;user-select:text">${esc(dbg)}</p></div>
       </div>`;
   }
   if (state.meStatus === "idle" || state.meStatus === "loading") {
