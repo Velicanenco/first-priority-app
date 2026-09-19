@@ -80,5 +80,6 @@
     inviteCoordinator: (country) => apiFetch("/api/invites/coordinator", { method: "POST", body: { country } }),
     getFive: () => apiFetch("/api/five"),
     saveFive: (entries) => apiFetch("/api/five", { method: "PUT", body: { entries } }),
+    getStats: () => apiFetch("/api/stats"),
   };
 })();

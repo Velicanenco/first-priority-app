@@ -14,6 +14,8 @@ const state = {
   meStatus: "idle", // idle | loading | loaded | no-telegram | error
   groups: [], // coordinator/admin: groups visible to them (GET /api/groups)
   lastCode: null, // most recently generated invite code, shown until the page re-renders past it
+  stats: null, // coordinator/admin: GET /api/stats response
+  statsStatus: "idle", // idle | loading | loaded | error
 };
 
 const el = {
@@ -617,6 +619,7 @@ async function loadMe() {
     state.meStatus = "loaded";
     if (state.me.role === "coordinator" || state.me.role === "admin") {
       await refreshGroups();
+      loadStats(); // fire-and-forget: its own status drives its own section, doesn't block the rest of the profile from showing
     }
   } catch (err) {
     console.error("[first-priority-app] loadMe failed:", err);
@@ -633,6 +636,33 @@ async function refreshGroups() {
     console.error("[first-priority-app] refreshGroups failed:", err);
     state.groups = [];
   }
+}
+
+// "Мои 5" is the one real discipleship signal the schema tracks (see
+// stats.js on the backend for why) — this pulls the rolled-up numbers for
+// whatever a coordinator/admin is allowed to see and re-renders just the
+// stats card, independent of the rest of the profile section.
+async function loadStats() {
+  // renderTeam() below is called UNCONDITIONALLY, deliberately matching
+  // loadMe()'s own pattern -- not gated behind `state.tab === "team"`.
+  // This call resolves quickly (right after boot, on the "home" tab), so a
+  // tab-gated render here would only ever paint the "loaded" state into a
+  // team page nobody's looking at yet; switching to "team" later does NOT
+  // re-render on its own (switchTab just shows/hides already-rendered
+  // markup), so that stale "loading…" text would sit there forever. Only
+  // the haptic wiring stays tab-gated, since that's genuinely wasted work
+  // on a hidden page.
+  state.statsStatus = "loading";
+  renderTeam();
+  try {
+    state.stats = await window.fpApi.getStats();
+    state.statsStatus = "loaded";
+  } catch (err) {
+    console.error("[first-priority-app] loadStats failed:", err);
+    state.statsStatus = "error";
+  }
+  renderTeam();
+  if (state.tab === "team") window.wireUpPressFeedback(el.pages.team);
 }
 
 function roleLabel(role) {
@@ -755,12 +785,90 @@ function renderAdminTools(me, d) {
       <div id="groupsList">${groupsListHtml}</div>
     </div>
     ${coordInviteBlock}
+    ${renderStatsBlock(me, d)}
   `;
+}
+
+// Program-health numbers backed by GET /api/stats — see loadStats() and
+// the backend's stats.js for what the schema actually lets us measure.
+function renderStatsBlock(me, d) {
+  const s = d.stats;
+
+  if (state.statsStatus === "idle" || state.statsStatus === "loading") {
+    return `
+      <div class="card" style="margin-top:var(--space-3)">
+        <h4 style="margin:0 0 4px">${esc(s.title)}</h4>
+        <p class="section-text" style="margin:0">${esc(s.loading)}</p>
+      </div>`;
+  }
+  if (state.statsStatus === "error" || !state.stats) {
+    return `
+      <div class="card" style="margin-top:var(--space-3)">
+        <h4 style="margin:0 0 4px">${esc(s.title)}</h4>
+        <p class="section-text" style="margin:0">${esc(s.errorNotice)}</p>
+        <button class="btn secondary tg-press" id="statsRetryBtn" style="margin-top:var(--space-2)">${esc(d.retryBtn)}</button>
+      </div>`;
+  }
+
+  const stats = state.stats;
+  const t2 = stats.totals;
+
+  const tileHtml = (value, label) => `
+    <div class="stat-tile"><b>${esc(String(value))}</b><span>${esc(label)}</span></div>`;
+
+  const grid = [
+    tileHtml(t2.groups, s.groupsLabel),
+    tileHtml(t2.leaders, s.leadersLabel),
+    tileHtml(t2.fiveCount, s.fiveLabel),
+    tileHtml(t2.prayedCount, s.prayedLabel),
+    tileHtml(t2.invitedCount, s.invitedLabel),
+  ].join("");
+
+  let roleBlock = "";
+  if (stats.roleCounts) {
+    const r = stats.roleCounts;
+    roleBlock = `
+      <div class="stat-role-row">
+        <span class="stat-role-chip"><b>${esc(String(r.participant))}</b> ${esc(roleLabel("participant"))}</span>
+        <span class="stat-role-chip"><b>${esc(String(r.leader))}</b> ${esc(roleLabel("leader"))}</span>
+        <span class="stat-role-chip"><b>${esc(String(r.coordinator))}</b> ${esc(roleLabel("coordinator"))}</span>
+        <span class="stat-role-chip"><b>${esc(String(r.admin))}</b> ${esc(roleLabel("admin"))}</span>
+      </div>`;
+  }
+
+  const groupsHtml = stats.groups.length
+    ? stats.groups.map((g) => `
+        <div class="stat-group-row">
+          <div class="stat-group-row-head">
+            <p><b>${esc(g.groupName)}</b></p>
+            <span>${esc(g.country)}</span>
+          </div>
+          <p class="section-text" style="margin:2px 0 0;font-size:12px">${g.leaderName ? esc(g.leaderName) : esc(s.noLeader)}</p>
+          <div class="stat-group-nums">
+            <span>${esc(s.fiveShort)}: <b>${esc(String(g.fiveCount))}</b></span>
+            <span>${esc(s.prayedShort)}: <b>${esc(String(g.prayedCount))}</b></span>
+            <span>${esc(s.invitedShort)}: <b>${esc(String(g.invitedCount))}</b></span>
+          </div>
+        </div>
+      `).join("")
+    : `<p class="section-text" style="margin:0">${esc(s.noGroupsYet)}</p>`;
+
+  return `
+    <div class="card" style="margin-top:var(--space-3)">
+      <h4 style="margin:0 0 4px">${esc(s.title)}</h4>
+      <div class="stat-grid">${grid}</div>
+      ${roleBlock}
+      <p class="section-label" style="margin:var(--space-4) 0 4px">${esc(s.byGroupTitle)}</p>
+      ${groupsHtml}
+    </div>`;
 }
 
 function wireAccountSection(root) {
   const retryBtn = root.querySelector("#meRetryBtn");
   if (retryBtn) retryBtn.addEventListener("click", () => loadMe());
+
+  const statsRetryBtn = root.querySelector("#statsRetryBtn");
+  if (statsRetryBtn) statsRetryBtn.addEventListener("click", () => loadStats());
 
   const redeemBtn = root.querySelector("#redeemBtn");
   const redeemInput = root.querySelector("#redeemInput");
