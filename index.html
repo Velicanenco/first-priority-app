@@ -6,7 +6,13 @@
 <title>First Priority · FISH</title>
 <meta name="description" content="First Priority — FISH cycle mini app" />
 <meta name="theme-color" content="#0c0c0c" />
-<script src="https://telegram.org/js/telegram-web-app.js" defer></script>
+<!-- No `defer` here on purpose: this must finish running before the plain
+     (non-deferred) scripts at the end of <body> execute, since telegram-init.js
+     reads window.Telegram.WebApp the instant it runs. A deferred script runs
+     AFTER every normal <body> script, not before -- with defer, every script
+     that depends on window.Telegram.WebApp would always see it as undefined,
+     even inside real Telegram, because it hadn't been created yet. -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="stylesheet" href="css/style.css" />
 <link rel="icon" href="assets/img/logo-mark.png" />
 </head>
