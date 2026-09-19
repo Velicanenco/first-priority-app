@@ -1119,30 +1119,42 @@ async function boot() {
   // screen (index.html also carries its own longer failsafe timer).
   window.setTimeout(hideSplash, 4300);
 
-  try {
-    // Baseline history entry: depth 0 = "at a tab root", nothing to pop.
-    history.replaceState({ depth: 0 }, "", location.pathname + location.search);
-
-    registerHomeSubpages();
-    registerFishSubpages();
-    registerTeamSubpages();
-
-    // Render immediately with whatever's in memory (an empty "My 5" list
-    // the first time render happens) rather than blocking the whole boot
-    // on a network call — the backend can take up to ~55s to answer on a
-    // cold start, and the app must not sit blank that whole time.
-    setLang(CURRENT_LANG, { silent: true });
-    wireChrome();
-    switchTab("home");
-
-    loadFive().then(() => {
+  // Fire these first, and completely independently of the setup steps
+  // below: neither depends on subpage registration, language setup, or tab
+  // wiring having run. This matters because a single unrelated exception
+  // anywhere in those steps must never be able to prevent the Team tab's
+  // profile check (or "My 5") from ever starting — that would show
+  // "Checking Telegram data…" (which looks identical to the untouched
+  // initial state) forever, with the timeout inside loadMe() never even
+  // getting a chance to fire since loadMe() itself was never called.
+  loadFive()
+    .then(() => {
       renderFive();
       window.wireUpPressFeedback(el.pages.five);
-    }); // fire-and-forget: fills in the real "My 5" list once the backend answers
-    loadMe(); // fire-and-forget: fills in the Team tab's profile card once it resolves
-  } catch (err) {
-    console.error("[first-priority-app] boot() failed:", err);
-    hideSplash();
+    })
+    .catch((err) => console.error("[first-priority-app] loadFive chain failed:", err));
+  loadMe().catch((err) => console.error("[first-priority-app] loadMe chain failed:", err));
+
+  // Each step runs independently: one throwing (a bad translation key, a
+  // missing element, anything) must not prevent the rest — including
+  // switchTab("home") — from still running. Previously these all shared one
+  // try/catch, so a single failure anywhere could leave the whole app
+  // frozen past the splash screen.
+  const steps = [
+    () => history.replaceState({ depth: 0 }, "", location.pathname + location.search),
+    registerHomeSubpages,
+    registerFishSubpages,
+    registerTeamSubpages,
+    () => setLang(CURRENT_LANG, { silent: true }),
+    wireChrome,
+    () => switchTab("home"),
+  ];
+  for (const step of steps) {
+    try {
+      step();
+    } catch (err) {
+      console.error("[first-priority-app] boot step failed:", step.name || "(anonymous)", err);
+    }
   }
 }
 
