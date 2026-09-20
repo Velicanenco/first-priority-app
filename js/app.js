@@ -16,6 +16,7 @@ const state = {
   lastCode: null, // most recently generated invite code, shown until the page re-renders past it
   stats: null, // coordinator/admin: GET /api/stats response
   statsStatus: "idle", // idle | loading | loaded | error
+  fiveJustToggled: null, // {id, field} | null -- see renderFiveItem's "just-toggled" pop animation
 };
 
 const el = {
@@ -190,6 +191,48 @@ function renderNav() {
   el.sheetCloseBtn.innerHTML = ICONS.close;
 }
 
+// Staggers a list/grid's children in with a small per-index delay (~40ms
+// apart) instead of all appearing at once -- see the .stagger-item /
+// fade-in-up keyframe in style.css. Called right after the parent's
+// innerHTML is set, before any user interaction, so it only ever plays as
+// a genuine entrance, never as a reaction to something the user did.
+function staggerIn(root, selector, stepMs = 40) {
+  root.querySelectorAll(selector).forEach((el, i) => {
+    el.style.animationDelay = `${i * stepMs}ms`;
+    el.classList.add("stagger-item");
+  });
+}
+
+function prefersReducedMotion() {
+  return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+// Counts a number element up from 0 to its already-rendered target value.
+// The DOM always has the correct final number even if this never runs
+// (reduced motion, or a very old browser) -- this only ever overlays a
+// temporary visual animation on top of markup that's already correct.
+function animateCountUp(el, duration = 600) {
+  const target = parseInt(el.textContent, 10);
+  if (!Number.isFinite(target) || target <= 0 || prefersReducedMotion()) return;
+  const start = performance.now();
+  el.textContent = "0";
+  function tick(now) {
+    const progress = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+    el.textContent = String(Math.round(target * eased));
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+// Called once, right after the Statistics card first shows real numbers
+// (see loadStats()) -- NOT on every re-render of the Team page, so
+// reopening an accordion or creating a group elsewhere on the same page
+// never replays it.
+function animateStatTiles(root) {
+  root.querySelectorAll(".stat-tile b, .stat-role-chip b").forEach((el) => animateCountUp(el));
+}
+
 function navRow({ icon, title, desc, key }) {
   return `
     <button class="nav-row tg-press" data-push="${key}">
@@ -289,6 +332,7 @@ function renderHome() {
   document.getElementById("homeCta").addEventListener("click", () => switchTab("fish"));
   wirePushRows(el.pages.home);
   window.wireUpPressFeedback(el.pages.home);
+  staggerIn(el.pages.home, ".nav-row");
 }
 
 function registerHomeSubpages() {
@@ -307,6 +351,7 @@ function registerHomeSubpages() {
           `).join("")}
         </div>
       </div>`;
+    staggerIn(body, ".pillar");
   });
 
   // "About" -- moved here wholesale from the old inline Home section:
@@ -431,6 +476,8 @@ function renderFish() {
   wirePushRows(el.pages.fish);
   wireAccordions(el.pages.fish);
   window.wireUpPressFeedback(el.pages.fish);
+  staggerIn(el.pages.fish, ".cycle-row");
+  staggerIn(el.pages.fish, ".week-card");
 }
 
 function renderWeekCard(wk, w, d) {
@@ -614,6 +661,9 @@ function renderTeam() {
   wireAccordions(el.pages.team);
   wireAccountSection(el.pages.team);
   window.wireUpPressFeedback(el.pages.team);
+  staggerIn(el.pages.team, ".nav-row");
+  staggerIn(el.pages.team, ".group-row");
+  staggerIn(el.pages.team, ".stat-group-row");
 }
 
 /* ------------------------------------------------------------------ */
@@ -676,15 +726,22 @@ async function loadStats() {
   // on a hidden page.
   state.statsStatus = "loading";
   renderTeam();
+  let justLoaded = false;
   try {
     state.stats = await window.fpApi.getStats();
     state.statsStatus = "loaded";
+    justLoaded = true;
   } catch (err) {
     console.error("[first-priority-app] loadStats failed:", err);
     state.statsStatus = "error";
   }
   renderTeam();
   if (state.tab === "team") window.wireUpPressFeedback(el.pages.team);
+  // Only the render right after a real fetch completes gets the count-up --
+  // never a re-render triggered by something unrelated later (creating a
+  // group, redeeming a code), which would just make the numbers flicker
+  // for no reason.
+  if (justLoaded) animateStatTiles(el.pages.team);
 }
 
 function roleLabel(role) {
@@ -708,9 +765,18 @@ function renderAccountSection() {
       </div>`;
   }
   if (state.meStatus === "idle" || state.meStatus === "loading") {
+    // Shaped like the real "loaded" card below (role-badge pill + one text
+    // line) so there's no layout jump once the actual profile arrives --
+    // just a shimmer standing in for content that's already known to be
+    // coming, instead of a plain "please wait" sentence.
     return `
       <div class="section fade-in">
-        <div class="myfive-mini"><p>${esc(d.loading)}</p><p style="margin-top:6px">${esc(d.loadingHint)}</p></div>
+        <p class="section-label">${esc(d.title)}</p>
+        <div class="card" style="padding:var(--space-4)">
+          <div class="skeleton" style="width:96px;height:28px;border-radius:999px"></div>
+          <div class="skeleton" style="width:55%;height:13px;margin-top:14px"></div>
+        </div>
+        <p class="section-text" style="margin-top:var(--space-3);text-align:center;font-size:12.5px">${esc(d.loadingHint)}</p>
       </div>`;
   }
   if (state.meStatus === "error") {
@@ -817,10 +883,15 @@ function renderStatsBlock(me, d) {
   const s = d.stats;
 
   if (state.statsStatus === "idle" || state.statsStatus === "loading") {
+    // Five tile-shaped placeholders standing in for the real stat-grid,
+    // rather than a plain "Считаем цифры…" line -- see .skeleton in
+    // style.css.
     return `
       <div class="card" style="margin-top:var(--space-3)">
         <h4 style="margin:0 0 4px">${esc(s.title)}</h4>
-        <p class="section-text" style="margin:0">${esc(s.loading)}</p>
+        <div class="stat-grid">
+          ${Array(5).fill(0).map(() => `<div class="skeleton" style="height:54px"></div>`).join("")}
+        </div>
       </div>`;
   }
   if (state.statsStatus === "error" || !state.stats) {
@@ -1164,8 +1235,14 @@ function renderFive() {
       const person = state.five.find((p) => p.id === id);
       if (!person) return;
       person[field] = !person[field];
+      // Ephemeral flag, same idiom as state.lastCode elsewhere: renderFive()
+      // reads it once (to add the "just-toggled" pop animation to only the
+      // one badge that actually changed) and it's cleared right after, so
+      // an unrelated later re-render never replays the pop.
+      state.fiveJustToggled = { id, field };
       saveFive();
       renderFive();
+      state.fiveJustToggled = null;
       window.haptic.impact("medium");
       if (person[field]) {
         toast(field === "prayed" ? t().five.toastPrayed : t().five.toastInvited, field === "prayed" ? ICONS.praying : ICONS.invite);
@@ -1186,14 +1263,17 @@ function renderFive() {
 }
 
 function renderFiveItem(p, d) {
+  const justToggled = state.fiveJustToggled?.id === p.id ? state.fiveJustToggled.field : null;
+  const prayPop = justToggled === "prayed" ? " just-toggled" : "";
+  const invitePop = justToggled === "invited" ? " just-toggled" : "";
   return `
     <div class="five-item">
       <div class="five-avatar">${esc(initials(p.name))}</div>
       <div class="five-item-body">
         <input type="text" value="${esc(p.name)}" data-name="${p.id}" readonly />
         <div class="five-toggles">
-          <button class="five-toggle pray" data-toggle data-id="${p.id}" data-field="prayed" data-on="${p.prayed}">${ICONS.praying}${esc(d.prayed)}</button>
-          <button class="five-toggle invite" data-toggle data-id="${p.id}" data-field="invited" data-on="${p.invited}">${ICONS.invite}${esc(d.invited)}</button>
+          <button class="five-toggle pray tg-press${prayPop}" data-toggle data-id="${p.id}" data-field="prayed" data-on="${p.prayed}">${ICONS.praying}${esc(d.prayed)}</button>
+          <button class="five-toggle invite tg-press${invitePop}" data-toggle data-id="${p.id}" data-field="invited" data-on="${p.invited}">${ICONS.invite}${esc(d.invited)}</button>
         </div>
       </div>
       <button class="five-remove tg-press" data-remove="${p.id}" aria-label="remove">${ICONS.trash}</button>

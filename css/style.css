@@ -186,6 +186,33 @@ a:focus-visible { outline: 2px solid var(--brand-red); outline-offset: 2px; }
 }
 .fade-in { animation: fade-in-up 340ms var(--ease-spring) both; }
 
+/* Same entrance as .fade-in, but meant to be applied to individual list/grid
+   items with a small JS-set animation-delay per index (see staggerIn() in
+   app.js) -- a "4 опоры"/week/group grid revealing item-by-item reads as
+   noticeably more considered than the whole block popping in at once. */
+.stagger-item { animation: fade-in-up 320ms var(--ease-spring) both; }
+
+/* Loading-state placeholders shaped like the real content (a pill for a
+   badge, a bar for a line of text) instead of a plain "Загружаем…" string --
+   tells the eye what's about to appear, not just that something is
+   happening. See account.loading / stats.loading render branches. */
+@keyframes shimmer-sweep {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+.skeleton {
+  background-color: var(--tg-secondary-bg); /* fallback if color-mix() isn't supported */
+  background: linear-gradient(
+    90deg,
+    var(--tg-secondary-bg) 25%,
+    color-mix(in srgb, var(--tg-secondary-bg) 60%, white) 50%,
+    var(--tg-secondary-bg) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-sweep 1600ms linear infinite;
+  border-radius: var(--radius-sm);
+}
+
 /* ---------------------------------------------------------------------- */
 /* Splash screen                                                          */
 /* ---------------------------------------------------------------------- */
@@ -990,6 +1017,18 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
 .five-toggle[data-on="true"] { border-color: transparent; color: #fff; }
 .five-toggle.pray[data-on="true"] { background: var(--share); }
 .five-toggle.invite[data-on="true"] { background: var(--hook); }
+
+/* The badge you actually just tapped gets a little pop -- see
+   state.fiveJustToggled in app.js. Plays once on that fresh element
+   (keyframes fire naturally on insertion, unlike a plain transition,
+   which needs an existing node to animate FROM) so tapping "Молюсь" /
+   "Позвал(а)" finally gives some feedback beyond the haptic buzz. */
+@keyframes five-toggle-pop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.16); }
+  100% { transform: scale(1); }
+}
+.five-toggle.just-toggled { animation: five-toggle-pop 360ms var(--ease-spring); }
 .five-remove {
   flex: none; width: 28px; height: 28px; border-radius: 50%;
   background: transparent; border: none; color: var(--tg-hint);
