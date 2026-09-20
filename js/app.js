@@ -1261,7 +1261,15 @@ async function boot() {
     registerTeamSubpages,
     () => setLang(CURRENT_LANG, { silent: true }),
     wireChrome,
-    () => switchTab("home"),
+    // Lets a link (e.g. the bot's own reminder message, "?tab=five") open
+    // straight into a specific tab instead of always landing on Home.
+    // Falls back to "home" for anything unrecognized, so a normal launch
+    // with no query string behaves exactly as before.
+    () => {
+      const requested = new URLSearchParams(location.search).get("tab");
+      const validTabs = ["home", "fish", "team", "five"];
+      switchTab(validTabs.includes(requested) ? requested : "home");
+    },
   ];
   for (const step of steps) {
     try {
