@@ -13,7 +13,7 @@
      that depends on window.Telegram.WebApp would always see it as undefined,
      even inside real Telegram, because it hadn't been created yet. -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link rel="stylesheet" href="css/style.css?v=20260920c" />
+<link rel="stylesheet" href="css/style.css?v=20260920d" />
 <link rel="icon" href="assets/img/logo-mark.png" />
 </head>
 <body>
@@ -26,6 +26,12 @@
      scrollbar-affected flow layout. On an actual phone .device is simply
      100% wide, so nothing changes there. -->
 <div class="device" id="device">
+
+  <!-- Faint per-tab brand-icon watermark, filled in by js/app.js
+       (renderTabBg) and swapped by switchTab(). Purely decorative, so it
+       lives outside #app and is never touched by the ready()/opacity
+       transition or the splash failsafe. -->
+  <div id="tabBg" aria-hidden="true"></div>
 
   <!-- ===================== SPLASH ===================== -->
   <div id="splash">
@@ -113,10 +119,10 @@
      files for several minutes even after a fresh deploy, which looks
      identical to the fix "not working" from inside the app. Bump the
      version string whenever any of these files change. -->
-<script src="js/telegram-init.js?v=20260920c"></script>
-<script src="js/icons.js?v=20260920c"></script>
-<script src="js/i18n.js?v=20260920c"></script>
-<script src="js/api.js?v=20260920c"></script>
-<script src="js/app.js?v=20260920c"></script>
+<script src="js/telegram-init.js?v=20260920d"></script>
+<script src="js/icons.js?v=20260920d"></script>
+<script src="js/i18n.js?v=20260920d"></script>
+<script src="js/api.js?v=20260920d"></script>
+<script src="js/app.js?v=20260920d"></script>
 </body>
 </html>

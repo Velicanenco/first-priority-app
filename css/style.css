@@ -132,6 +132,11 @@ body {
    phone .device is simply 100% wide, so nothing changes there. */
 .device {
   position: relative;
+  /* Establishes .device as its own stacking context (position + an
+     explicit, non-auto z-index) so #tabBg below can use z-index:-1 to
+     paint behind #app's ordinary static content while still painting
+     in front of .device's own flat background -- see #tabBg's comment. */
+  z-index: 0;
   max-width: var(--app-max);
   margin: 0 auto;
   min-height: 100vh;
@@ -142,6 +147,42 @@ body {
 @media (min-width: 460px) {
   .device { box-shadow: 0 0 60px rgba(0,0,0,.18); }
 }
+
+/* Per-tab background watermark: a large, very faint brand glyph sitting
+   behind the page content. position:fixed + the same viewport-pinning
+   trick as #stackRoot/.tabbar keeps it aligned to the app column; the
+   negative z-index (paired with .device's z-index:0 above) places it in
+   the "negative z-index descendants" paint bucket -- after .device's own
+   background, but before #app's non-positioned static content, so it
+   never sits on top of text or cards. Cards/topbar have their own opaque
+   background anyway, so this only ever shows through in the empty page
+   margins -- which is the point: texture, not decoration you consciously
+   notice. */
+#tabBg {
+  position: fixed;
+  left: 50%; top: 0; bottom: 0;
+  transform: translateX(-50%);
+  width: 100%; max-width: var(--app-max);
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.tab-bg-icon {
+  position: absolute;
+  right: -10%;
+  bottom: 4%;
+  width: 62%;
+  color: var(--ink);
+  opacity: 0;
+  transform: rotate(-6deg) scale(0.92);
+  transition: opacity 420ms var(--ease-sheet), transform 420ms var(--ease-sheet);
+}
+.tab-bg-icon svg { display: block; width: 100%; height: auto; }
+.tab-bg-icon.active { opacity: 0.05; transform: rotate(-6deg) scale(1); }
+[data-color-scheme="dark"] .tab-bg-icon.active { opacity: 0.08; }
+/* The FISH glyph is drawn wide (2:1) rather than square -- give it more
+   width so it reads at a comparable visual size to the others. */
+.tab-bg-icon[data-bg="fish"] { width: 78%; right: -14%; bottom: 10%; }
 
 a { color: var(--tg-link); text-decoration: none; }
 img { max-width: 100%; display: block; }

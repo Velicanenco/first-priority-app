@@ -30,6 +30,7 @@ const el = {
     five: document.getElementById("page-five"),
   },
   tabbar: document.getElementById("tabbar"),
+  tabBg: document.getElementById("tabBg"),
   langSwitch: document.getElementById("langSwitch"),
   stackRoot: document.getElementById("stackRoot"),
   sheetBackdrop: document.getElementById("sheetBackdrop"),
@@ -167,6 +168,11 @@ function switchTab(tab) {
   el.tabbar.querySelectorAll(".tab-btn").forEach((b) => {
     b.classList.toggle("active", b.dataset.tab === tab);
   });
+  if (el.tabBg) {
+    el.tabBg.querySelectorAll(".tab-bg-icon").forEach((n) => {
+      n.classList.toggle("active", n.dataset.bg === tab);
+    });
+  }
   if (el.pages[tab]) {
     el.pages[tab].querySelectorAll(".fade-in").forEach((n) => {
       n.style.animation = "none"; n.offsetHeight; n.style.animation = "";
@@ -181,6 +187,25 @@ function switchTab(tab) {
 /* ------------------------------------------------------------------ */
 /* Nav bar (icons only rendered once; labels re-rendered on lang switch)*/
 /* ------------------------------------------------------------------ */
+
+// Faint, oversized brand-icon watermark behind each tab -- same glyph as
+// that tab's own nav icon, so the mapping is obvious and free (no new
+// icon-to-tab decision to make). Built once; switchTab() just toggles
+// which one is .active. See #tabBg / .tab-bg-icon in style.css for the
+// stacking-context trick that keeps this behind content but above the
+// flat .device background.
+function renderTabBg() {
+  if (!el.tabBg) return;
+  const layers = [
+    ["home", ICONS.navHome],
+    ["fish", ICONS.navFish],
+    ["team", ICONS.navTeam],
+    ["five", ICONS.navFive],
+  ];
+  el.tabBg.innerHTML = layers
+    .map(([key, svg]) => `<div class="tab-bg-icon" data-bg="${key}">${svg}</div>`)
+    .join("");
+}
 
 function renderNav() {
   const c = t().common.tabs;
@@ -1358,6 +1383,7 @@ async function boot() {
   // frozen past the splash screen.
   const steps = [
     () => history.replaceState({ depth: 0 }, "", location.pathname + location.search),
+    renderTabBg,
     registerHomeSubpages,
     registerFishSubpages,
     registerTeamSubpages,
