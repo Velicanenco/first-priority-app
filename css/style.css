@@ -385,12 +385,18 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
   position: relative;
   margin: 0 0 var(--space-2);
   overflow: hidden;
-  min-height: 280px;
+  /* Was 280px -- that was mostly empty photo above the text, pushing
+     everything else on the page down for no real payoff. Shorter box +
+     object-position biased toward the lower half of the photo (crops the
+     top, not the middle) means the same image now reads as a compact
+     banner instead of a nearly full-screen cover shot. */
+  min-height: 200px;
   display: flex;
   align-items: flex-end;
 }
 .hero img {
   position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  object-position: 50% 68%;
   filter: grayscale(1) contrast(0.95) brightness(1.05);
 }
 .hero::after {
@@ -398,7 +404,7 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
   position: absolute; inset: 0;
   background: linear-gradient(180deg, rgba(10,10,10,0) 30%, rgba(10,10,10,.85) 100%);
 }
-.hero-inner { position: relative; z-index: 2; padding: var(--space-6) var(--space-4); color: #fff; width: 100%; }
+.hero-inner { position: relative; z-index: 2; padding: var(--space-4) var(--space-4) var(--space-4); color: #fff; width: 100%; }
 .hero-ribbon {
   display: inline-block;
   background: var(--ink);
@@ -411,8 +417,8 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
   border-radius: 4px;
   margin-bottom: var(--space-2);
 }
-.hero-title { font-size: 32px; margin: 0 0 8px; color: #fff; }
-.hero-sub { font-size: 14.5px; line-height: 1.5; color: rgba(255,255,255,.86); margin: 0; max-width: 46ch; }
+.hero-title { font-size: 26px; line-height: 1.15; margin: 0 0 6px; color: #fff; }
+.hero-sub { font-size: 14px; line-height: 1.45; color: rgba(255,255,255,.86); margin: 0; max-width: 46ch; }
 
 /* ---------------------------------------------------------------------- */
 /* Cards                                                                    */
@@ -445,6 +451,14 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
   font-size: 12.5px;
   color: rgba(255,255,255,.6);
   letter-spacing: 0.03em;
+}
+/* Only the real attributed quote (not the CTA card, which reuses <cite> for
+   a plain sentence) gets pulled right so it reads like an actual
+   quotation's byline instead of another line of left-aligned body text. */
+.quote-card cite.quote-attribution {
+  display: block;
+  text-align: right;
+  margin-top: 2px;
 }
 
 .pillar-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }

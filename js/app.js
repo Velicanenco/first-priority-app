@@ -244,6 +244,11 @@ function wireAccordions(root) {
 /* PAGE: HOME (short hub) + pushed sub-pages                            */
 /* ------------------------------------------------------------------ */
 
+// Home used to be one long scroll: full paragraphs for "about", a text
+// block for "battle", and a whole accordion for "where we fish", all
+// inline, one after another. Now each of those is one tap away as its own
+// pushed page (see registerHomeSubpages below) -- Home itself is just the
+// hero, the quote, a short list of what to explore, and the CTA.
 function renderHome() {
   const d = t().home;
   el.pages.home.innerHTML = `
@@ -259,39 +264,18 @@ function renderHome() {
     <div class="section fade-in">
       <div class="quote-card">
         <p>${esc(d.quote)}</p>
-        <cite>— ${esc(d.quoteAuthor)}</cite>
+        <cite class="quote-attribution">— ${esc(d.quoteAuthor)}</cite>
       </div>
     </div>
 
     <div class="section fade-in">
-      <p class="section-label">${esc(d.aboutLabel)}</p>
-      <h2 class="display section-title">${esc(d.aboutTitle)}</h2>
-      <p class="section-text">${esc(d.aboutText)}</p>
-      <div class="card accordion" style="padding:0 var(--space-4);margin-top:var(--space-3)">
-        ${accordionItem({ title: d.visionLabel, text: d.visionText })}
-        ${accordionItem({ title: d.missionLabel, text: d.missionText })}
-        ${accordionItem({ title: d.strategyLabel, text: d.strategyText })}
-      </div>
-    </div>
-
-    <div class="section fade-in">
-      <div class="ribbon-wrap"><div class="ribbon"><span>${esc(d.beliefQuote)}</span><span>${esc(d.beliefQuote)}</span></div></div>
-      <p class="section-label">${esc(d.battleLabel)}</p>
-      <h2 class="display section-title">${esc(d.battleTitle)}</h2>
-      <p class="section-text">${esc(d.battleText)}</p>
-    </div>
-
-    <div class="section fade-in">
+      <p class="section-label">${esc(d.exploreLabel)}</p>
+      <h2 class="display section-title">${esc(d.exploreTitle)}</h2>
       <div class="card" style="padding:0 var(--space-4)">
+        ${navRow({ icon: ICONS.heart, title: d.aboutTitle, desc: d.aboutLabel, key: "home-about" })}
+        ${navRow({ icon: ICONS.target, title: d.battleTitle, desc: d.battleLabel, key: "home-context" })}
         ${navRow({ icon: ICONS.hands, title: d.pillarsTitle, desc: d.pillarsLabel, key: "home-pillars" })}
-      </div>
-    </div>
-
-    <div class="section fade-in">
-      <p class="section-label">${esc(d.whereLabel)}</p>
-      <h2 class="display section-title">${esc(d.whereTitle)}</h2>
-      <div class="card accordion" style="padding:0 var(--space-4)">
-        ${d.where.map((w) => accordionItem({ title: w.title, text: w.text })).join("")}
+        ${navRow({ icon: ICONS.church, title: d.whereTitle, desc: d.whereLabel, key: "home-where" })}
       </div>
     </div>
 
@@ -304,7 +288,6 @@ function renderHome() {
   `;
   document.getElementById("homeCta").addEventListener("click", () => switchTab("fish"));
   wirePushRows(el.pages.home);
-  wireAccordions(el.pages.home);
   window.wireUpPressFeedback(el.pages.home);
 }
 
@@ -324,6 +307,45 @@ function registerHomeSubpages() {
           `).join("")}
         </div>
       </div>`;
+  });
+
+  // "About" -- moved here wholesale from the old inline Home section:
+  // the intro paragraph plus the Vision/Mission/Strategy accordion.
+  registerStackPage("home-about", () => t().home.aboutTitle, (body) => {
+    const d = t().home;
+    body.innerHTML = `
+      <div class="section" style="padding-top:var(--space-4)">
+        <p class="section-text">${esc(d.aboutText)}</p>
+        <div class="card accordion" style="padding:0 var(--space-4);margin-top:var(--space-3)">
+          ${accordionItem({ title: d.visionLabel, text: d.visionText })}
+          ${accordionItem({ title: d.missionLabel, text: d.missionText })}
+          ${accordionItem({ title: d.strategyLabel, text: d.strategyText })}
+        </div>
+      </div>`;
+    wireAccordions(body);
+  });
+
+  // "Context / battle" -- the scrolling belief-quote ribbon plus the
+  // battle text, also moved here unchanged from the old inline section.
+  registerStackPage("home-context", () => t().home.battleTitle, (body) => {
+    const d = t().home;
+    body.innerHTML = `
+      <div class="section" style="padding-top:var(--space-4)">
+        <div class="ribbon-wrap"><div class="ribbon"><span>${esc(d.beliefQuote)}</span><span>${esc(d.beliefQuote)}</span></div></div>
+        <p class="section-text">${esc(d.battleText)}</p>
+      </div>`;
+  });
+
+  // "Where we fish" -- the Churches/Clubs/Schools accordion.
+  registerStackPage("home-where", () => t().home.whereTitle, (body) => {
+    const d = t().home;
+    body.innerHTML = `
+      <div class="section" style="padding-top:var(--space-4)">
+        <div class="card accordion" style="padding:0 var(--space-4)">
+          ${d.where.map((w) => accordionItem({ title: w.title, text: w.text })).join("")}
+        </div>
+      </div>`;
+    wireAccordions(body);
   });
 }
 
