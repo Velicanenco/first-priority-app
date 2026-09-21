@@ -483,15 +483,7 @@ function renderFish() {
     <div class="section fade-in">
       <div class="card" style="padding:0 var(--space-4)">
         ${navRow({ icon: ICONS.fish, title: d.symbolTitle, desc: d.symbolLabel, key: "fish-symbol" })}
-      </div>
-    </div>
-
-    <div class="section fade-in">
-      <p class="section-label">${esc(d.connectLabel)}</p>
-      <h2 class="display section-title">${esc(d.connectTitle)}</h2>
-      <p class="section-text">${esc(d.connectText)}</p>
-      <div class="card accordion" style="padding:0 var(--space-4);margin-top:var(--space-3)">
-        ${d.connectSteps.map((s, i) => accordionItem({ title: `${t().common.step} ${i + 1}`, text: s })).join("")}
+        ${navRow({ icon: ICONS.handshake, title: d.connectTitle, desc: d.connectLabel, key: "fish-connect" })}
       </div>
     </div>
 
@@ -509,8 +501,8 @@ function renderFish() {
     btn.addEventListener("click", () => openWeekSheet(btn.dataset.openWeek));
   });
   wirePushRows(el.pages.fish);
-  wireAccordions(el.pages.fish);
   window.wireUpPressFeedback(el.pages.fish);
+  staggerIn(el.pages.fish, ".nav-row");
   staggerIn(el.pages.fish, ".cycle-row");
   staggerIn(el.pages.fish, ".week-card");
 }
@@ -656,6 +648,22 @@ function registerFishSubpages() {
         <p class="section-text">${esc(d.symbolText)}</p>
       </div>`;
   });
+
+  // "Connect" -- what happens after Hook. Moved off the FISH hub (same
+  // reasoning as the Home redesign): a lead paragraph plus a 4-step
+  // accordion is exactly the kind of text wall that reads as cheap when
+  // it's just sitting in the middle of a scrolling hub.
+  registerStackPage("fish-connect", () => t().fish.connectTitle, (body) => {
+    const d = t().fish;
+    body.innerHTML = `
+      <div class="section" style="padding-top:var(--space-4)">
+        <p class="section-text">${esc(d.connectText)}</p>
+        <div class="card accordion" style="padding:0 var(--space-4);margin-top:var(--space-3)">
+          ${d.connectSteps.map((s, i) => accordionItem({ title: `${t().common.step} ${i + 1}`, text: s })).join("")}
+        </div>
+      </div>`;
+    wireAccordions(body);
+  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -681,19 +689,11 @@ function renderTeam() {
         ${navRow({ icon: ICONS.book, title: d.resourcesTitle, desc: d.resourcesLabel, key: "team-resources" })}
         ${navRow({ icon: ICONS.users, title: d.structureTitle, desc: d.structureLabel, key: "team-structure" })}
         ${navRow({ icon: ICONS.fish, title: d.teamsTitle, desc: d.teamsLabel, key: "team-teams" })}
-      </div>
-    </div>
-
-    <div class="section fade-in">
-      <p class="section-label">${esc(d.growLabel)}</p>
-      <h2 class="display section-title">${esc(d.growTitle)}</h2>
-      <div class="card accordion" style="padding:0 var(--space-4);margin-top:var(--space-3)">
-        ${d.growTips.map((g) => accordionItem({ title: g.t, text: g.d })).join("")}
+        ${navRow({ icon: ICONS.star, title: d.growTitle, desc: d.growLabel, key: "team-grow" })}
       </div>
     </div>
   `;
   wirePushRows(el.pages.team);
-  wireAccordions(el.pages.team);
   wireAccountSection(el.pages.team);
   window.wireUpPressFeedback(el.pages.team);
   staggerIn(el.pages.team, ".nav-row");
@@ -1206,6 +1206,20 @@ function registerTeamSubpages() {
           `).join("")}
         </div>
       </div>`;
+  });
+
+  // "Grow as a leader" -- moved off the Team hub for the same reason as
+  // Home's Vision/Mission/Strategy accordion: a title plus a multi-item
+  // accordion doesn't need to sit permanently on the hub's scroll.
+  registerStackPage("team-grow", () => t().team.growTitle, (body) => {
+    const d = t().team;
+    body.innerHTML = `
+      <div class="section" style="padding-top:var(--space-4)">
+        <div class="card accordion" style="padding:0 var(--space-4)">
+          ${d.growTips.map((g) => accordionItem({ title: g.t, text: g.d })).join("")}
+        </div>
+      </div>`;
+    wireAccordions(body);
   });
 
   // Per-group statistics drill-down -- pushed from a "By group" row in the
