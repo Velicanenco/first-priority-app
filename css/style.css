@@ -5,10 +5,14 @@
    accent color per FISH week, notch-corner cards, diagonal ribbon labels.
    ========================================================================== */
 
-@font-face {
-  font-family: "Oswald";
-  src: local("Oswald");
-}
+/* Oswald itself is loaded as a real webfont from Google Fonts (see the
+   <link> in index.html) -- there used to be an @font-face stub here that
+   only pointed at local("Oswald"), which does nothing for the near-total
+   majority of visitors who don't happen to have that font already
+   installed on their device. That silent fallback (to whatever generic
+   sans the platform picked) is a big part of why headlines read as
+   plain/generic rather than the bold condensed display type the source
+   decks use. */
 
 :root {
   /* ---- Telegram theme tokens (overwritten at runtime by telegram-init.js) ---- */
@@ -31,6 +35,22 @@
   --paper-warm: #faf9f5;
   --halftone: #c9c9c0;
   --line: #e6e5df;
+
+  /* ---- "Ink slab" cards (quote/CTA card, witness button, resource cards,
+     the Мои 5 hero card, the invite-code display) ---- deliberately always
+     look like a solid black card with light text, matching the source
+     deck's black panels, REGARDLESS of light/dark theme. --ink/--paper
+     above are semantic "current theme's ink / current theme's paper" and
+     correctly flip in dark mode ([data-color-scheme="dark"] below) so
+     ordinary text stays readable against the page background -- but that
+     flip is exactly wrong for these specific cards: it turned them into a
+     pale cream card while their decorative rgba(255,255,255,.NN) accents
+     and dimmed text stayed hardcoded white, making that text disappear.
+     --slab-bg/--slab-text are defined ONCE, here, and never redefined in
+     the dark-mode block, so every rgba(255,255,255,..) inside a slab card
+     stays correct in both themes. */
+  --slab-bg: #121212;
+  --slab-text: #ffffff;
 
   /* ---- Brand accent (from FIRST PRIORITY wordmark) ---- */
   --brand-red: #a3242f;
@@ -203,11 +223,11 @@ a:focus-visible { outline: 2px solid var(--brand-red); outline-offset: 2px; }
 /* ---------------------------------------------------------------------- */
 
 .display {
-  font-family: "Arial Narrow", "Oswald", -apple-system, sans-serif;
-  font-weight: 800;
+  font-family: "Oswald", "Arial Narrow", -apple-system, sans-serif;
+  font-weight: 700;
   letter-spacing: -0.01em;
   text-transform: uppercase;
-  line-height: 0.96;
+  line-height: 0.98;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -475,8 +495,13 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
 .hero-inner { position: relative; z-index: 2; padding: var(--space-4) var(--space-4) var(--space-4); color: #fff; width: 100%; }
 .hero-ribbon {
   display: inline-block;
-  background: var(--ink);
-  color: var(--paper);
+  /* Fixed dark pill, not var(--ink)/var(--paper) -- the hero photo always
+     carries its own dark scrim (see .hero::after above) regardless of
+     theme, so this should read as a solid black label over that scrim in
+     both themes, matching the deck's black ribbon bars, rather than
+     flipping to a pale cream pill in dark mode. */
+  background: var(--slab-bg);
+  color: var(--slab-text);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -484,9 +509,33 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
   padding: 5px 10px;
   border-radius: 4px;
   margin-bottom: var(--space-2);
+  opacity: 0;
+  animation: fade-in-up 380ms var(--ease-spring) 60ms both;
 }
-.hero-title { font-size: 26px; line-height: 1.15; margin: 0 0 6px; color: #fff; }
-.hero-sub { font-size: 14px; line-height: 1.45; color: rgba(255,255,255,.86); margin: 0; max-width: 46ch; }
+.hero-title {
+  font-size: 27px; line-height: 1.05; margin: 0 0 8px; color: #fff;
+  overflow: hidden; /* clips the reveal wipe below */
+}
+.hero-title span {
+  display: block;
+  /* A horizontal wipe (clip-path, not opacity) reads as a more deliberate
+     "reveal" than a plain fade -- closer to how the source decks' bold
+     headlines feel like they're being unveiled rather than just appearing. */
+  animation: hero-title-reveal 640ms var(--ease-sheet) 140ms both;
+}
+@keyframes hero-title-reveal {
+  /* Vertical insets go slightly negative (extend past the box) so the
+     wipe only ever clips left/right -- a plain inset(0 .. 0 0) would also
+     clip tall ascenders/descenders and accented Cyrillic characters
+     vertically, which a horizontal-only reveal shouldn't touch. */
+  from { clip-path: inset(-20% 100% -20% 0); transform: translateY(8px); }
+  to   { clip-path: inset(-20% 0 -20% 0); transform: translateY(0); }
+}
+.hero-sub {
+  font-size: 14px; line-height: 1.45; color: rgba(255,255,255,.86); margin: 0; max-width: 46ch;
+  opacity: 0;
+  animation: fade-in-up 420ms var(--ease-spring) 260ms both;
+}
 
 /* ---------------------------------------------------------------------- */
 /* Cards                                                                    */
@@ -502,11 +551,15 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
 .stack { display: flex; flex-direction: column; gap: var(--space-3); }
 
 .quote-card {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--slab-bg);
+  color: var(--slab-text);
   border-radius: var(--radius-md);
   padding: var(--space-6) var(--space-4);
   position: relative;
+  /* Same notch-corner treatment as .week-card -- ties the quote/CTA card
+     visually to the FISH week cards instead of it being just a plain
+     rounded rectangle. */
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
 }
 .quote-card p {
   font-size: 19px;
@@ -592,9 +645,17 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
   width: 34px; height: 34px;
   border-radius: 50%;
   background: var(--ink);
+  color: var(--paper);
   display: flex; align-items: center; justify-content: center;
 }
-.cycle-icon svg { width: 18px; height: 18px; stroke: #fff; }
+/* These glyphs are filled shapes (fill="currentColor" on the root <svg>),
+   not stroked outlines -- .cycle-icon's `color` above is what actually
+   colors them via currentColor. Previously nothing set that color, so the
+   icon silently inherited the page's ordinary text color instead: in
+   light mode that's near-black text on this same near-black circle, i.e.
+   an invisible icon that just happened to still "work" by accident in
+   whichever theme currentColor's ambient value was light. */
+.cycle-icon svg { width: 18px; height: 18px; }
 
 /* ---------------------------------------------------------------------- */
 /* FISH week cards (notch-corner, colored, matching the deck)             */
@@ -877,7 +938,7 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
 .witness-btn {
   display: flex; align-items: center; gap: var(--space-3);
   width: 100%; text-align: left;
-  background: var(--ink); color: var(--paper);
+  background: var(--slab-bg); color: var(--slab-text);
   border: none; border-radius: var(--radius-md);
   padding: var(--space-4); margin-top: var(--space-4);
 }
@@ -910,7 +971,7 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
 /* testimony guide sub-sheet content */
 .testimony-step { margin-bottom: var(--space-4); }
 .testimony-step-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-.testimony-step-num { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--ink); color: #fff; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.testimony-step-num { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--ink); color: var(--paper); font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
 .testimony-step h4 { font-size: 15px; margin: 0; }
 .testimony-step p { font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); margin: 0 0 0 34px; }
 .word-cloud { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0 34px; }
@@ -924,8 +985,8 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
 .resource-card {
   display: flex;
   gap: var(--space-3);
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--slab-bg);
+  color: var(--slab-text);
   border-radius: var(--radius-md);
   padding: var(--space-4);
   position: relative;
@@ -1007,8 +1068,8 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
 /* ---------------------------------------------------------------------- */
 
 .five-card {
-  background: linear-gradient(155deg, var(--ink) 0%, #262420 100%);
-  color: #fff;
+  background: linear-gradient(155deg, var(--slab-bg) 0%, #262420 100%);
+  color: var(--slab-text);
   border-radius: var(--radius-lg);
   padding: var(--space-6) var(--space-4);
   position: relative;
@@ -1038,7 +1099,7 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
 }
 .five-avatar {
   flex: none; width: 38px; height: 38px; border-radius: 50%;
-  background: var(--ink); color: #fff;
+  background: var(--ink); color: var(--paper);
   display: flex; align-items: center; justify-content: center;
   font-weight: 800; font-size: 15px; text-transform: uppercase;
 }
@@ -1090,7 +1151,7 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
 }
 .five-add button {
   flex: none; width: 36px; height: 36px; border-radius: 50%;
-  background: var(--ink); color: #fff; border: none;
+  background: var(--ink); color: var(--paper); border: none;
   display: flex; align-items: center; justify-content: center;
 }
 .five-add button svg { width: 16px; height: 16px; }
@@ -1132,14 +1193,14 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
 
 .code-display {
   display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
-  background: var(--ink); color: var(--paper);
+  background: var(--slab-bg); color: var(--slab-text);
   border-radius: var(--radius-sm);
   padding: 12px 14px; margin-top: var(--space-2);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 15px; font-weight: 700; letter-spacing: 0.03em;
 }
 .code-display button {
-  flex: none; border: 1px solid rgba(255,255,255,.35); background: transparent; color: var(--paper);
+  flex: none; border: 1px solid rgba(255,255,255,.35); background: transparent; color: var(--slab-text);
   border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 700;
 }
 
@@ -1152,19 +1213,44 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
   margin-top: var(--space-3);
 }
 .stat-tile {
-  background: var(--tg-secondary-bg); border-radius: var(--radius-sm);
-  padding: 10px 6px; text-align: center;
+  background: var(--tg-secondary-bg); border-radius: var(--radius-md);
+  padding: 12px 6px 10px; text-align: center;
+  display: flex; flex-direction: column; align-items: center;
 }
-.stat-tile b { display: block; font-size: 19px; line-height: 1.15; }
-.stat-tile span { display: block; margin-top: 2px; font-size: 10px; line-height: 1.25; color: var(--tg-hint); }
+/* A small colored icon per tile, rotating through the same FISH-cycle
+   accent colors used everywhere else (focus/inspire/share/hook) instead
+   of every tile being an identical gray box -- the tiles are otherwise
+   just numbers, which was the flattest, least "alive" part of the whole
+   app. */
+.stat-tile-icon {
+  width: 26px; height: 26px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 7px;
+}
+.stat-tile-icon svg { width: 14px; height: 14px; }
+.stat-tile b {
+  display: block; font-family: "Oswald", "Arial Narrow", sans-serif;
+  font-weight: 700; font-size: 23px; line-height: 1;
+}
+.stat-tile span { display: block; margin-top: 4px; font-size: 10px; line-height: 1.25; color: var(--tg-hint); }
 
 .stat-role-row { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
 .stat-role-chip { background: var(--tg-secondary-bg); border-radius: 999px; padding: 5px 12px; font-size: 12px; color: var(--ink-soft); }
 .stat-role-chip b { font-weight: 700; color: var(--ink); }
 
-.stat-group-row { padding: var(--space-3) 0; border-bottom: 1px solid var(--line); }
+/* .stat-group-row is a <button> (tappable -- opens the per-group
+   drill-down, see wireAccountSection's [data-group-id] handler), so it
+   needs the block-level, full-width, left-aligned layout a <div> got for
+   free; the global `button { background:none; border:none; padding:0;
+   color:inherit }` reset already handles the rest. */
+.stat-group-row {
+  display: block; width: 100%; text-align: left;
+  padding: var(--space-3) 0; border-bottom: 1px solid var(--line);
+}
 .stat-group-row:last-child { border-bottom: none; }
-.stat-group-row-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+.stat-group-row-top { display: flex; align-items: center; gap: var(--space-2); }
+.stat-group-row-top > svg { flex: none; width: 15px; height: 15px; color: var(--tg-hint); }
+.stat-group-row-head { flex: 1; min-width: 0; display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
 .stat-group-row-head p { margin: 0; font-size: 13px; }
 .stat-group-row-head span { color: var(--tg-hint); font-size: 11.5px; flex: none; }
 .stat-group-nums { display: flex; gap: var(--space-4); margin-top: 6px; font-size: 12px; color: var(--tg-hint); }
@@ -1179,7 +1265,7 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
 #toast {
   position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%) translateY(10px);
-  background: var(--ink); color: #fff; font-size: 13px; font-weight: 600;
+  background: var(--ink); color: var(--paper); font-size: 13px; font-weight: 600;
   padding: 10px 16px; border-radius: 999px; z-index: 200;
   opacity: 0; pointer-events: none; transition: opacity 220ms ease, transform 220ms var(--ease-spring);
   white-space: nowrap;

@@ -13,7 +13,24 @@
      that depends on window.Telegram.WebApp would always see it as undefined,
      even inside real Telegram, because it hadn't been created yet. -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link rel="stylesheet" href="css/style.css?v=20260920d" />
+<!-- Headline display font: the source decks set every big headline in a
+     heavy condensed poster-style grotesque ("ЦИКЛ FISH", "ИДЕТ БИТВА
+     ЗА..."). This app is RU/UK-first (only "ro"/"en" are Latin), which
+     rules out most bold-condensed display fonts on Google Fonts -- Anton
+     and Bebas Neue, the obvious visual matches, are both Latin-only and
+     would silently fall back to a plain system font for every Cyrillic
+     headline, i.e. almost every headline. Oswald has real, purpose-built
+     Cyrillic (designed by Cyreal, the foundry that did the Cyrillic for
+     several popular Google Fonts) alongside Latin, so it's the one bold
+     condensed option that actually renders for every language this app
+     ships. Only the one weight this app uses (700) is requested, to keep
+     the download small. preconnect warms the two Google Fonts origins so
+     the first paint of any heading isn't blocked on DNS+TLS on top of the
+     font request itself. -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/style.css?v=20260921a" />
 <link rel="icon" href="assets/img/logo-mark.png" />
 </head>
 <body>
@@ -119,10 +136,10 @@
      files for several minutes even after a fresh deploy, which looks
      identical to the fix "not working" from inside the app. Bump the
      version string whenever any of these files change. -->
-<script src="js/telegram-init.js?v=20260920d"></script>
-<script src="js/icons.js?v=20260920d"></script>
-<script src="js/i18n.js?v=20260920d"></script>
-<script src="js/api.js?v=20260920d"></script>
-<script src="js/app.js?v=20260920d"></script>
+<script src="js/telegram-init.js?v=20260921a"></script>
+<script src="js/icons.js?v=20260921a"></script>
+<script src="js/i18n.js?v=20260921a"></script>
+<script src="js/api.js?v=20260921a"></script>
+<script src="js/app.js?v=20260921a"></script>
 </body>
 </html>

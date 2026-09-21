@@ -81,5 +81,6 @@
     getFive: () => apiFetch("/api/five"),
     saveFive: (entries) => apiFetch("/api/five", { method: "PUT", body: { entries } }),
     getStats: () => apiFetch("/api/stats"),
+    getGroupStats: (groupId) => apiFetch("/api/stats/group/" + encodeURIComponent(groupId)),
   };
 })();

@@ -17,6 +17,12 @@ const state = {
   stats: null, // coordinator/admin: GET /api/stats response
   statsStatus: "idle", // idle | loading | loaded | error
   fiveJustToggled: null, // {id, field} | null -- see renderFiveItem's "just-toggled" pop animation
+  // Which group's drill-down is open in the "stats-group-detail" stack page,
+  // and what GET /api/stats/group/:id has returned for it so far. Set right
+  // before pushPage("stats-group-detail") -- see wireStatsGroupRows().
+  statsGroupDetail: null, // { groupId, groupName, country } | null
+  statsGroupDetailStatus: "idle", // idle | loading | loaded | error
+  statsGroupDetailData: null,
 };
 
 const el = {
@@ -174,7 +180,11 @@ function switchTab(tab) {
     });
   }
   if (el.pages[tab]) {
-    el.pages[tab].querySelectorAll(".fade-in").forEach((n) => {
+    // .hero-ribbon / .hero-title span / .hero-sub animate via a plain CSS
+    // selector (not a toggled class, since they're always the same three
+    // elements) -- included here so re-visiting a tab replays the whole
+    // hero entrance together, the same way .fade-in already does.
+    el.pages[tab].querySelectorAll(".fade-in, .hero-ribbon, .hero-title span, .hero-sub").forEach((n) => {
       n.style.animation = "none"; n.offsetHeight; n.style.animation = "";
     });
   }
@@ -324,7 +334,7 @@ function renderHome() {
       <img src="assets/img/hero-focus.jpg" alt="" />
       <div class="hero-inner">
         <span class="hero-ribbon">${esc(d.heroRibbon)}</span>
-        <h1 class="display hero-title">${esc(d.heroTitle)}</h1>
+        <h1 class="display hero-title"><span>${esc(d.heroTitle)}</span></h1>
         <p class="hero-sub">${esc(d.heroSub)}</p>
       </div>
     </div>
@@ -435,7 +445,7 @@ function renderFish() {
       <img src="assets/img/hero-hook.jpg" alt="" />
       <div class="hero-inner">
         <span class="hero-ribbon">${esc(d.heroRibbon)}</span>
-        <h1 class="display hero-title">${esc(d.heroTitle)}</h1>
+        <h1 class="display hero-title"><span>${esc(d.heroTitle)}</span></h1>
         <p class="hero-sub">${esc(d.heroSub)}</p>
       </div>
     </div>
@@ -455,7 +465,7 @@ function renderFish() {
       <div class="cycle-strip">
         ${WEEK_ORDER.map(wk => `
           <div class="cycle-row" data-week="${wk}">
-            <div class="cycle-icon">${ICONS[WEEK_ICON[wk]].replace('class="week-icon-glyph"', 'style="width:16px;height:16px" fill="white"')}</div>
+            <div class="cycle-icon">${ICONS[WEEK_ICON[wk]]}</div>
             <div class="cycle-days">${d.weeks[wk].name} · ${WEEK_DAYS[wk]}</div>
           </div>
         `).join("")}
@@ -489,7 +499,7 @@ function renderFish() {
       <div class="five-card tg-press" id="fishFiveCta" style="cursor:pointer">
         <h2>${esc(d.fiveCardTitle)}</h2>
         <p>${esc(d.fiveCardText)}</p>
-        <div style="margin-top:16px"><span class="btn" style="background:#fff;color:var(--ink)">${esc(d.fiveCardBtn)} ${ICONS.arrowUpRight}</span></div>
+        <div style="margin-top:16px"><span class="btn" style="background:#fff;color:var(--slab-bg)">${esc(d.fiveCardBtn)} ${ICONS.arrowUpRight}</span></div>
       </div>
     </div>
   `;
@@ -600,7 +610,7 @@ function renderTestimonyContent() {
   const d = t().testimony;
   el.sheetTitle.textContent = d.sheetTitle;
   el.sheetBody.innerHTML = `
-    <span class="sheet-band" style="background:var(--ink);color:#fff">${esc(d.sheetLabel)}</span>
+    <span class="sheet-band" style="background:var(--slab-bg);color:var(--slab-text)">${esc(d.sheetLabel)}</span>
     <div style="padding:0 var(--space-4)">
       <p class="section-text" style="margin-top:14px">${esc(d.intro)}</p>
       <div style="margin-top:8px">
@@ -659,7 +669,7 @@ function renderTeam() {
       <img src="assets/img/hero-team.jpg" alt="" />
       <div class="hero-inner">
         <span class="hero-ribbon">${esc(d.heroRibbon)}</span>
-        <h1 class="display hero-title">${esc(d.heroTitle)}</h1>
+        <h1 class="display hero-title"><span>${esc(d.heroTitle)}</span></h1>
         <p class="hero-sub">${esc(d.heroSub)}</p>
       </div>
     </div>
@@ -931,15 +941,30 @@ function renderStatsBlock(me, d) {
   const stats = state.stats;
   const t2 = stats.totals;
 
-  const tileHtml = (value, label) => `
-    <div class="stat-tile"><b>${esc(String(value))}</b><span>${esc(label)}</span></div>`;
+  // Rotate through the same FISH-cycle accent colors used on the FISH tab
+  // (see --focus/--inspire/--share/--hook in style.css) so the stats grid
+  // isn't five identical gray boxes -- a small, free way to make the
+  // numbers feel like part of the same brand system instead of a generic
+  // admin dashboard.
+  const TILE_ACCENTS = [
+    { bg: "var(--focus)", ink: "var(--focus-ink)" },
+    { bg: "var(--inspire)", ink: "var(--inspire-ink)" },
+    { bg: "var(--share)", ink: "#fff" },
+    { bg: "var(--hook)", ink: "var(--hook-ink)" },
+    { bg: "var(--focus)", ink: "var(--focus-ink)" },
+  ];
+  const tileHtml = (value, label, icon, accent) => `
+    <div class="stat-tile">
+      <div class="stat-tile-icon" style="background:${accent.bg};color:${accent.ink}">${icon}</div>
+      <b>${esc(String(value))}</b><span>${esc(label)}</span>
+    </div>`;
 
   const grid = [
-    tileHtml(t2.groups, s.groupsLabel),
-    tileHtml(t2.leaders, s.leadersLabel),
-    tileHtml(t2.fiveCount, s.fiveLabel),
-    tileHtml(t2.prayedCount, s.prayedLabel),
-    tileHtml(t2.invitedCount, s.invitedLabel),
+    tileHtml(t2.groups, s.groupsLabel, ICONS.church, TILE_ACCENTS[0]),
+    tileHtml(t2.leaders, s.leadersLabel, ICONS.users, TILE_ACCENTS[1]),
+    tileHtml(t2.fiveCount, s.fiveLabel, ICONS.hands, TILE_ACCENTS[2]),
+    tileHtml(t2.prayedCount, s.prayedLabel, ICONS.praying, TILE_ACCENTS[3]),
+    tileHtml(t2.invitedCount, s.invitedLabel, ICONS.invite, TILE_ACCENTS[4]),
   ].join("");
 
   let roleBlock = "";
@@ -956,10 +981,14 @@ function renderStatsBlock(me, d) {
 
   const groupsHtml = stats.groups.length
     ? stats.groups.map((g) => `
-        <div class="stat-group-row">
-          <div class="stat-group-row-head">
-            <p><b>${esc(g.groupName)}</b></p>
-            <span>${esc(g.country)}</span>
+        <button class="stat-group-row tg-press" type="button"
+          data-group-id="${esc(g.groupId)}" data-group-name="${esc(g.groupName)}" data-group-country="${esc(g.country)}">
+          <div class="stat-group-row-top">
+            <div class="stat-group-row-head">
+              <p><b>${esc(g.groupName)}</b></p>
+              <span>${esc(g.country)}</span>
+            </div>
+            ${ICONS.chevronRight}
           </div>
           <p class="section-text" style="margin:2px 0 0;font-size:12px">${g.leaderName ? esc(g.leaderName) : esc(s.noLeader)}</p>
           <div class="stat-group-nums">
@@ -967,7 +996,7 @@ function renderStatsBlock(me, d) {
             <span>${esc(s.prayedShort)}: <b>${esc(String(g.prayedCount))}</b></span>
             <span>${esc(s.invitedShort)}: <b>${esc(String(g.invitedCount))}</b></span>
           </div>
-        </div>
+        </button>
       `).join("")
     : `<p class="section-text" style="margin:0">${esc(s.noGroupsYet)}</p>`;
 
@@ -976,7 +1005,10 @@ function renderStatsBlock(me, d) {
       <h4 style="margin:0 0 4px">${esc(s.title)}</h4>
       <div class="stat-grid">${grid}</div>
       ${roleBlock}
-      <p class="section-label" style="margin:var(--space-4) 0 4px">${esc(s.byGroupTitle)}</p>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin:var(--space-4) 0 4px;gap:var(--space-2)">
+        <p class="section-label" style="margin:0">${esc(s.byGroupTitle)}</p>
+        ${stats.groups.length ? `<span style="font-size:11px;color:var(--tg-hint)">${esc(s.openHint)}</span>` : ""}
+      </div>
       ${groupsHtml}
     </div>`;
 }
@@ -1084,6 +1116,23 @@ function wireAccountSection(root) {
       }
     });
   });
+
+  // Tapping a group in the "By group" list drills into that ONE group's
+  // real names + statuses (GET /api/stats/group/:id) instead of the
+  // aggregate counts already shown here -- see registerTeamSubpages()
+  // for the "stats-group-detail" stack page this opens.
+  root.querySelectorAll("[data-group-id]").forEach((row) => {
+    row.addEventListener("click", () => {
+      state.statsGroupDetail = {
+        groupId: row.dataset.groupId,
+        groupName: row.dataset.groupName,
+        country: row.dataset.groupCountry,
+      };
+      state.statsGroupDetailStatus = "idle";
+      state.statsGroupDetailData = null;
+      pushPage("stats-group-detail");
+    });
+  });
 }
 
 function registerTeamSubpages() {
@@ -1158,6 +1207,98 @@ function registerTeamSubpages() {
         </div>
       </div>`;
   });
+
+  // Per-group statistics drill-down -- pushed from a "By group" row in the
+  // stats card (see wireAccountSection's [data-group-id] handler). The
+  // title reads state.statsGroupDetail synchronously (set right before
+  // pushPage runs), but the actual leader/five data is fetched fresh on
+  // every open, same as loadStats() -- names/prayed/invited can change
+  // between visits, and this page is cheap to refetch.
+  registerStackPage(
+    "stats-group-detail",
+    () => state.statsGroupDetail?.groupName || t().account.stats.title,
+    (body) => loadStatsGroupDetail(body)
+  );
+}
+
+function renderStatsGroupDetail(body) {
+  const s = t().account.stats;
+  const info = state.statsGroupDetail;
+  if (!info) { body.innerHTML = ""; return; }
+
+  if (state.statsGroupDetailStatus === "idle" || state.statsGroupDetailStatus === "loading") {
+    body.innerHTML = `
+      <div class="section" style="padding-top:var(--space-4)">
+        <div class="card" style="padding:var(--space-4)">
+          <div class="skeleton" style="width:80px;height:22px;border-radius:999px"></div>
+          <div class="skeleton" style="width:60%;height:14px;margin-top:12px"></div>
+        </div>
+        <div class="card" style="margin-top:var(--space-3)">
+          ${[0, 1, 2].map(() => `<div class="skeleton" style="height:56px;margin-bottom:8px;border-radius:var(--radius-md)"></div>`).join("")}
+        </div>
+      </div>`;
+    return;
+  }
+
+  if (state.statsGroupDetailStatus === "error" || !state.statsGroupDetailData) {
+    body.innerHTML = `
+      <div class="section" style="padding-top:var(--space-4)">
+        <div class="myfive-mini">
+          <p>${esc(s.detailErrorNotice)}</p>
+          <button class="btn secondary tg-press" id="statsGroupRetryBtn">${esc(t().account.retryBtn)}</button>
+        </div>
+      </div>`;
+    const retryBtn = body.querySelector("#statsGroupRetryBtn");
+    if (retryBtn) retryBtn.addEventListener("click", () => loadStatsGroupDetail(body));
+    return;
+  }
+
+  const data = state.statsGroupDetailData;
+  const leaderBlock = data.leader
+    ? `<p class="section-text" style="margin:8px 0 0"><b>${esc(s.detailLeaderTitle)}:</b> ${esc(data.leader.firstName || data.leader.username || "—")}</p>`
+    : `<p class="section-text" style="margin:8px 0 0">${esc(s.noLeader)}</p>`;
+
+  const fiveHtml = data.five.length
+    ? data.five.map((p) => `
+        <div class="five-item stagger-item">
+          <div class="five-avatar">${esc(initials(p.name))}</div>
+          <div class="five-item-body">
+            <div style="font-size:14.5px;font-weight:700">${esc(p.name)}</div>
+            <div class="five-toggles">
+              <span class="five-toggle pray" data-on="${p.prayed}">${ICONS.praying}${esc(s.prayedShort)}</span>
+              <span class="five-toggle invite" data-on="${p.invited}">${ICONS.invite}${esc(s.invitedShort)}</span>
+            </div>
+          </div>
+        </div>
+      `).join("")
+    : `<p class="section-text" style="margin:0">${esc(s.detailNoFive)}</p>`;
+
+  body.innerHTML = `
+    <div class="section" style="padding-top:var(--space-4)">
+      <div class="card" style="padding:var(--space-4)">
+        <span class="role-badge">${esc(info.country)}</span>
+        ${leaderBlock}
+      </div>
+      <div class="card" style="margin-top:var(--space-3)">
+        <h4 style="margin:0 0 4px">${esc(s.detailFiveTitle)}</h4>
+        <div class="five-list" style="margin-top:var(--space-3)">${fiveHtml}</div>
+      </div>
+    </div>`;
+}
+
+async function loadStatsGroupDetail(body) {
+  const info = state.statsGroupDetail;
+  if (!info) return;
+  state.statsGroupDetailStatus = "loading";
+  renderStatsGroupDetail(body);
+  try {
+    state.statsGroupDetailData = await window.fpApi.getGroupStats(info.groupId);
+    state.statsGroupDetailStatus = "loaded";
+  } catch (err) {
+    console.error("[first-priority-app] loadStatsGroupDetail failed:", err);
+    state.statsGroupDetailStatus = "error";
+  }
+  renderStatsGroupDetail(body);
 }
 
 /* ------------------------------------------------------------------ */
