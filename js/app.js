@@ -98,6 +98,7 @@ function pushPage(key) {
   state.navStack.push({ type: "page", key });
   history.pushState({ depth: state.navStack.length }, "", "#" + key);
   window.haptic.impact("light");
+  window.sound?.open();
   updateBackButton();
 }
 
@@ -108,12 +109,14 @@ function actuallyPopPage() {
   top.classList.remove("active");
   if (pages.length > 1) pages[pages.length - 2].classList.remove("behind");
   window.setTimeout(() => top.remove(), 340);
+  window.sound?.close();
 }
 
 function openSheetTracked() {
   el.sheetBackdrop.classList.add("open");
   requestAnimationFrame(() => el.sheet.classList.add("open"));
   window.haptic.impact("light");
+  window.sound?.open();
   state.navStack.push({ type: "sheet" });
   history.pushState({ depth: state.navStack.length }, "", "#sheet");
   updateBackButton();
@@ -122,6 +125,7 @@ function actuallyCloseSheet() {
   el.sheet.classList.remove("open");
   el.sheetBackdrop.classList.remove("open");
   state.sheetMode = null;
+  window.sound?.close();
 }
 
 function updateBackButton() {
@@ -1426,6 +1430,7 @@ function renderFive() {
       window.haptic.impact("medium");
       if (person[field]) {
         toast(field === "prayed" ? t().five.toastPrayed : t().five.toastInvited, field === "prayed" ? ICONS.praying : ICONS.invite);
+        window.sound?.success();
       }
     });
   });

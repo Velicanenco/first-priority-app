@@ -64,10 +64,26 @@
     try { tg.setHeaderColor && tg.setHeaderColor("secondary_bg_color"); } catch (e) {}
   }
 
+  // notification()/selection() double as the app's sound trigger points --
+  // see sound.js. Deliberately NOT wired into impact(), which fires on
+  // every single .tg-press pointerdown (nav rows, generic buttons): a sound
+  // on every one of those would be noisy, not polished. notification()
+  // only fires on real success/error outcomes (redeem a code, create a
+  // group, add a "Five" entry...); selection() fires on tab switches,
+  // language switches, and expanding/collapsing an accordion -- all
+  // deliberate "state changed" taps rather than every press, so a soft
+  // tick reads as an accent, not noise.
   window.haptic = {
     impact(style = "light") { tg?.HapticFeedback?.impactOccurred(style); },
-    notification(type = "success") { tg?.HapticFeedback?.notificationOccurred(type); },
-    selection() { tg?.HapticFeedback?.selectionChanged(); },
+    notification(type = "success") {
+      tg?.HapticFeedback?.notificationOccurred(type);
+      if (type === "success") window.sound?.success();
+      else if (type === "error") window.sound?.error();
+    },
+    selection() {
+      tg?.HapticFeedback?.selectionChanged();
+      window.sound?.tick();
+    },
   };
 
   window.wireUpPressFeedback = function (root = document) {
