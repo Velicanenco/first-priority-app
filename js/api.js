@@ -78,6 +78,7 @@
     createGroup: (name, country) => apiFetch("/api/groups", { method: "POST", body: { name, country } }),
     inviteLeader: (group_id) => apiFetch("/api/invites/leader", { method: "POST", body: { group_id } }),
     inviteCoordinator: (country) => apiFetch("/api/invites/coordinator", { method: "POST", body: { country } }),
+    inviteNationalCoordinator: (country) => apiFetch("/api/invites/national-coordinator", { method: "POST", body: { country } }),
     getFive: () => apiFetch("/api/five"),
     saveFive: (entries) => apiFetch("/api/five", { method: "PUT", body: { entries } }),
     getStats: () => apiFetch("/api/stats"),

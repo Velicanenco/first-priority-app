@@ -23,6 +23,12 @@ const state = {
   statsGroupDetail: null, // { groupId, groupName, country } | null
   statsGroupDetailStatus: "idle", // idle | loading | loaded | error
   statsGroupDetailData: null,
+  // Which country's clubs are open in the "stats-country-detail" stack page
+  // (admin only, when there's more than one country to group by). No fetch
+  // of its own -- it's a client-side filter over the already-loaded
+  // state.stats.groups/byCountry, since the backend already rolls those up
+  // in one GET /api/stats call.
+  statsCountryDetail: null, // { country } | null
 };
 
 const el = {
@@ -728,7 +734,7 @@ async function loadMe() {
   try {
     state.me = await window.fpApi.me();
     state.meStatus = "loaded";
-    if (state.me.role === "coordinator" || state.me.role === "admin") {
+    if (state.me.role === "coordinator" || state.me.role === "national_coordinator" || state.me.role === "admin") {
       await refreshGroups();
       loadStats(); // fire-and-forget: its own status drives its own section, doesn't block the rest of the profile from showing
     }
@@ -849,7 +855,7 @@ function renderAccountSection() {
       </div>`;
   }
 
-  const adminBlock = (me.role === "coordinator" || me.role === "admin") ? renderAdminTools(me, d) : "";
+  const adminBlock = (me.role === "coordinator" || me.role === "national_coordinator" || me.role === "admin") ? renderAdminTools(me, d) : "";
 
   return `
     <div class="section fade-in">
@@ -865,6 +871,10 @@ function renderAccountSection() {
 }
 
 function renderAdminTools(me, d) {
+  const isAdmin = me.role === "admin";
+  const isNational = me.role === "national_coordinator";
+  const isCoordinator = me.role === "coordinator";
+
   const codeBlock = state.lastCode ? `
     <div class="card" style="margin-top:var(--space-3)">
       <p class="section-label" style="margin:0 0 4px">${esc(d.codeGenerated)}</p>
@@ -875,30 +885,14 @@ function renderAdminTools(me, d) {
       <p class="section-text" style="margin:8px 0 0;font-size:12.5px">${esc(d.codeShareHint)}</p>
     </div>` : "";
 
-  const countryField = me.role === "admin"
+  const countryField = isAdmin
     ? `<input type="text" id="newGroupCountry" class="field-input" placeholder="${esc(d.countryPlaceholder)}" />`
     : `<input type="hidden" id="newGroupCountry" value="${esc(me.country || "")}" />`;
 
-  const groupsListHtml = state.groups.length
-    ? state.groups.map((g) => `
-        <div class="group-row">
-          <div class="group-row-body"><p><b>${esc(g.name)}</b></p><span>${esc(g.country)}</span></div>
-          <button class="btn tg-press" data-invite-leader="${esc(g.id)}">${esc(d.inviteLeaderBtn)}</button>
-        </div>
-      `).join("")
-    : `<p class="section-text" style="margin:0">${esc(d.noGroupsYet)}</p>`;
-
-  const coordInviteBlock = me.role === "admin" ? `
-    <div class="card" style="margin-top:var(--space-3)">
-      <h4 style="margin:0 0 4px">${esc(d.inviteCoordinatorTitle)}</h4>
-      <div class="field-stack">
-        <input type="text" id="coordCountryInput" class="field-input" placeholder="${esc(d.countryPlaceholder)}" />
-        <button id="coordInviteBtn" class="btn full tg-press">${esc(d.inviteCoordinatorBtn)}</button>
-      </div>
-    </div>` : "";
-
-  return `
-    ${codeBlock}
+  // A national_coordinator is oversight-only (see POST /api/groups on the
+  // backend, which 403s them) -- they grow their country by inviting
+  // Community Coordinators, who then create and run the actual clubs.
+  const createGroupBlock = (isCoordinator || isAdmin) ? `
     <div class="card" style="margin-top:var(--space-3)">
       <h4 style="margin:0 0 4px">${esc(d.createGroupTitle)}</h4>
       <div class="field-stack">
@@ -906,18 +900,138 @@ function renderAdminTools(me, d) {
         ${countryField}
         <button id="createGroupBtn" class="btn full tg-press">${esc(d.createGroupBtn)}</button>
       </div>
-    </div>
+    </div>` : "";
+
+  // A national_coordinator's group list includes every club in their
+  // country, not just ones they personally created -- so the per-group
+  // "invite a leader" action (which only the club's own coordinator, or
+  // admin, may do) is left off for them; it's read-only oversight here.
+  const canInviteLeaderPerGroup = isCoordinator || isAdmin;
+  const groupsListHtml = state.groups.length
+    ? state.groups.map((g) => `
+        <div class="group-row">
+          <div class="group-row-body"><p><b>${esc(g.name)}</b></p><span>${esc(g.country)}</span></div>
+          ${canInviteLeaderPerGroup ? `<button class="btn tg-press" data-invite-leader="${esc(g.id)}">${esc(d.inviteLeaderBtn)}</button>` : ""}
+        </div>
+      `).join("")
+    : `<p class="section-text" style="margin:0">${esc(d.noGroupsYet)}</p>`;
+
+  // Admin can invite a coordinator into any country; a national_coordinator
+  // can too, but only ever for their own -- the country field is forced
+  // server-side either way (see POST /api/invites/coordinator), so it's
+  // shown here as a fixed fact rather than an editable one for that role.
+  const coordCountryField = isNational
+    ? `<input type="hidden" id="coordCountryInput" value="${esc(me.country || "")}" />
+       <p class="section-text" style="margin:0 0 8px">${esc(d.countryLabel)}: <b>${esc(me.country || "")}</b></p>`
+    : `<input type="text" id="coordCountryInput" class="field-input" placeholder="${esc(d.countryPlaceholder)}" />`;
+  const coordInviteBlock = (isAdmin || isNational) ? `
     <div class="card" style="margin-top:var(--space-3)">
-      <h4 style="margin:0 0 8px">${esc(d.yourGroupsTitle)}</h4>
+      <h4 style="margin:0 0 4px">${esc(d.inviteCoordinatorTitle)}</h4>
+      <div class="field-stack">
+        ${coordCountryField}
+        <button id="coordInviteBtn" class="btn full tg-press">${esc(d.inviteCoordinatorBtn)}</button>
+      </div>
+    </div>` : "";
+
+  // Deliberately admin-only, not delegable to a national_coordinator --
+  // keeping this one step to a small, human-vetted set of admins is the
+  // whole "shrink the blast radius" point of the role (see the backend's
+  // POST /api/invites/national-coordinator).
+  const ncInviteBlock = isAdmin ? `
+    <div class="card" style="margin-top:var(--space-3)">
+      <h4 style="margin:0 0 4px">${esc(d.inviteNationalCoordinatorTitle)}</h4>
+      <div class="field-stack">
+        <input type="text" id="ncCountryInput" class="field-input" placeholder="${esc(d.countryPlaceholder)}" />
+        <button id="ncInviteBtn" class="btn full tg-press">${esc(d.inviteNationalCoordinatorBtn)}</button>
+      </div>
+    </div>` : "";
+
+  return `
+    ${codeBlock}
+    ${createGroupBlock}
+    <div class="card" style="margin-top:var(--space-3)">
+      <h4 style="margin:0 0 8px">${esc(isNational ? d.groupsInCountryTitle : d.yourGroupsTitle)}</h4>
       <div id="groupsList">${groupsListHtml}</div>
     </div>
     ${coordInviteBlock}
+    ${ncInviteBlock}
     ${renderStatsBlock(me, d)}
   `;
 }
 
 // Program-health numbers backed by GET /api/stats — see loadStats() and
 // the backend's stats.js for what the schema actually lets us measure.
+// One row in a "by group" list -- used both on the top-level stats card and
+// on the per-country drill-down page below. data-search-key backs the
+// client-side name filter in wireSearchFilter(); everything needed to
+// render/filter/open a group is already sitting in the one GET /api/stats
+// response, so none of this needs its own network round-trip.
+function groupRowHtml(g, s) {
+  return `
+    <button class="stat-group-row tg-press" type="button" data-search-key="${esc(g.groupName.toLowerCase())}"
+      data-group-id="${esc(g.groupId)}" data-group-name="${esc(g.groupName)}" data-group-country="${esc(g.country)}">
+      <div class="stat-group-row-top">
+        <div class="stat-group-row-head">
+          <p><b>${esc(g.groupName)}</b></p>
+          <span>${esc(g.country)}</span>
+        </div>
+        ${ICONS.chevronRight}
+      </div>
+      <p class="section-text" style="margin:2px 0 0;font-size:12px">${g.leaderName ? esc(g.leaderName) : esc(s.noLeader)}</p>
+      <div class="stat-group-nums">
+        <span>${esc(s.fiveShort)}: <b>${esc(String(g.fiveCount))}</b></span>
+        <span>${esc(s.prayedShort)}: <b>${esc(String(g.prayedCount))}</b></span>
+        <span>${esc(s.invitedShort)}: <b>${esc(String(g.invitedCount))}</b></span>
+      </div>
+    </button>`;
+}
+
+// A small text filter over rows already in the DOM (toggling display, never
+// re-rendering) -- re-rendering on every keystroke would rebuild the input
+// itself and throw away focus/cursor position mid-type.
+function searchInputHtml(inputId, emptyId, placeholder) {
+  return `
+    <div class="five-add" style="margin-bottom:var(--space-2)">
+      <input type="text" id="${esc(inputId)}" placeholder="${esc(placeholder)}" />
+    </div>
+    <p id="${esc(emptyId)}" class="section-text" style="display:none;margin:0 0 8px">—</p>`;
+}
+function wireSearchFilter(root, inputId, emptyId, rowSelector, emptyText) {
+  const input = root.querySelector("#" + inputId);
+  const emptyMsg = root.querySelector("#" + emptyId);
+  if (!input) return;
+  if (emptyMsg) emptyMsg.textContent = emptyText;
+  input.addEventListener("input", () => {
+    const q = input.value.trim().toLowerCase();
+    const rows = root.querySelectorAll(rowSelector);
+    let anyVisible = false;
+    rows.forEach((row) => {
+      const match = !q || (row.dataset.searchKey || "").includes(q);
+      row.style.display = match ? "" : "none";
+      if (match) anyVisible = true;
+    });
+    if (emptyMsg) emptyMsg.style.display = (rows.length && !anyVisible) ? "" : "none";
+  });
+}
+
+// Opening a group's drill-down is the same action whether the row is
+// sitting in the top-level stats card or inside a country's club list --
+// shared so both wiring sites stay in sync.
+function wireStatGroupRowClicks(root) {
+  root.querySelectorAll("[data-group-id]").forEach((row) => {
+    row.addEventListener("click", () => {
+      state.statsGroupDetail = {
+        groupId: row.dataset.groupId,
+        groupName: row.dataset.groupName,
+        country: row.dataset.groupCountry,
+      };
+      state.statsGroupDetailStatus = "idle";
+      state.statsGroupDetailData = null;
+      pushPage("stats-group-detail");
+    });
+  });
+}
+
 function renderStatsBlock(me, d) {
   const s = d.stats;
 
@@ -979,41 +1093,64 @@ function renderStatsBlock(me, d) {
         <span class="stat-role-chip"><b>${esc(String(r.participant))}</b> ${esc(roleLabel("participant"))}</span>
         <span class="stat-role-chip"><b>${esc(String(r.leader))}</b> ${esc(roleLabel("leader"))}</span>
         <span class="stat-role-chip"><b>${esc(String(r.coordinator))}</b> ${esc(roleLabel("coordinator"))}</span>
+        ${typeof r.national_coordinator === "number" ? `<span class="stat-role-chip"><b>${esc(String(r.national_coordinator))}</b> ${esc(roleLabel("national_coordinator"))}</span>` : ""}
         <span class="stat-role-chip"><b>${esc(String(r.admin))}</b> ${esc(roleLabel("admin"))}</span>
       </div>`;
   }
 
-  const groupsHtml = stats.groups.length
-    ? stats.groups.map((g) => `
-        <button class="stat-group-row tg-press" type="button"
-          data-group-id="${esc(g.groupId)}" data-group-name="${esc(g.groupName)}" data-group-country="${esc(g.country)}">
-          <div class="stat-group-row-top">
-            <div class="stat-group-row-head">
-              <p><b>${esc(g.groupName)}</b></p>
-              <span>${esc(g.country)}</span>
-            </div>
-            ${ICONS.chevronRight}
+  // Hundreds of clubs across dozens of countries (admin's real long-term
+  // scale) makes one flat "by group" list unusable -- once there's more
+  // than one country in the rollup, group by country instead: a short list
+  // of countries here, each opening to that country's own club list (with
+  // its own search) on the "stats-country-detail" page. A coordinator or
+  // national_coordinator only ever sees one country (byCountry.length is
+  // always 1 for them, by construction on the backend), so they keep the
+  // flat list -- just with a search box once it's long enough to need one.
+  const showCountries = stats.byCountry.length > 1;
+
+  let listHtml;
+  if (showCountries) {
+    const countryRows = stats.byCountry.map((c) => `
+      <button class="stat-group-row tg-press" type="button" data-search-key="${esc(c.country.toLowerCase())}" data-country-row="${esc(c.country)}">
+        <div class="stat-group-row-top">
+          <div class="stat-group-row-head">
+            <p><b>${esc(c.country)}</b></p>
+            <span>${esc(s.groupsLabel)}: ${esc(String(c.groups))} · ${esc(s.leadersLabel)}: ${esc(String(c.leaders))}</span>
           </div>
-          <p class="section-text" style="margin:2px 0 0;font-size:12px">${g.leaderName ? esc(g.leaderName) : esc(s.noLeader)}</p>
-          <div class="stat-group-nums">
-            <span>${esc(s.fiveShort)}: <b>${esc(String(g.fiveCount))}</b></span>
-            <span>${esc(s.prayedShort)}: <b>${esc(String(g.prayedCount))}</b></span>
-            <span>${esc(s.invitedShort)}: <b>${esc(String(g.invitedCount))}</b></span>
-          </div>
-        </button>
-      `).join("")
-    : `<p class="section-text" style="margin:0">${esc(s.noGroupsYet)}</p>`;
+          ${ICONS.chevronRight}
+        </div>
+        <div class="stat-group-nums">
+          <span>${esc(s.fiveShort)}: <b>${esc(String(c.fiveCount))}</b></span>
+          <span>${esc(s.prayedShort)}: <b>${esc(String(c.prayedCount))}</b></span>
+          <span>${esc(s.invitedShort)}: <b>${esc(String(c.invitedCount))}</b></span>
+        </div>
+      </button>`).join("");
+    listHtml = `
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin:var(--space-4) 0 4px;gap:var(--space-2)">
+        <p class="section-label" style="margin:0">${esc(s.byCountryTitle)}</p>
+        <span style="font-size:11px;color:var(--tg-hint)">${esc(s.openHint)}</span>
+      </div>
+      ${stats.byCountry.length > 6 ? searchInputHtml("statsSearchInput", "statsSearchEmpty", s.searchCountryPlaceholder) : ""}
+      ${countryRows}`;
+  } else {
+    const groupsHtml = stats.groups.length
+      ? stats.groups.map((g) => groupRowHtml(g, s)).join("")
+      : `<p class="section-text" style="margin:0">${esc(s.noGroupsYet)}</p>`;
+    listHtml = `
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin:var(--space-4) 0 4px;gap:var(--space-2)">
+        <p class="section-label" style="margin:0">${esc(s.byGroupTitle)}</p>
+        ${stats.groups.length ? `<span style="font-size:11px;color:var(--tg-hint)">${esc(s.openHint)}</span>` : ""}
+      </div>
+      ${stats.groups.length > 6 ? searchInputHtml("statsSearchInput", "statsSearchEmpty", s.searchClubPlaceholder) : ""}
+      ${groupsHtml}`;
+  }
 
   return `
     <div class="card" style="margin-top:var(--space-3)">
       <h4 style="margin:0 0 4px">${esc(s.title)}</h4>
       <div class="stat-grid">${grid}</div>
       ${roleBlock}
-      <div style="display:flex;align-items:baseline;justify-content:space-between;margin:var(--space-4) 0 4px;gap:var(--space-2)">
-        <p class="section-label" style="margin:0">${esc(s.byGroupTitle)}</p>
-        ${stats.groups.length ? `<span style="font-size:11px;color:var(--tg-hint)">${esc(s.openHint)}</span>` : ""}
-      </div>
-      ${groupsHtml}
+      ${listHtml}
     </div>`;
 }
 
@@ -1109,6 +1246,27 @@ function wireAccountSection(root) {
     });
   }
 
+  const ncInviteBtn = root.querySelector("#ncInviteBtn");
+  if (ncInviteBtn) {
+    ncInviteBtn.addEventListener("click", async () => {
+      const country = root.querySelector("#ncCountryInput")?.value.trim();
+      if (!country) return;
+      ncInviteBtn.disabled = true;
+      try {
+        const res = await window.fpApi.inviteNationalCoordinator(country);
+        state.lastCode = res.code;
+        renderTeam();
+        window.wireUpPressFeedback(el.pages.team);
+        toast(t().account.codeGenerated, ICONS.check);
+        window.haptic.notification("success");
+      } catch (err) {
+        toast(t().account.errorNotice, ICONS.close);
+        window.haptic.notification("error");
+        ncInviteBtn.disabled = false;
+      }
+    });
+  }
+
   root.querySelectorAll("[data-copy-code]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const code = btn.dataset.copyCode;
@@ -1125,18 +1283,19 @@ function wireAccountSection(root) {
   // real names + statuses (GET /api/stats/group/:id) instead of the
   // aggregate counts already shown here -- see registerTeamSubpages()
   // for the "stats-group-detail" stack page this opens.
-  root.querySelectorAll("[data-group-id]").forEach((row) => {
+  wireStatGroupRowClicks(root);
+
+  // Tapping a country (only rendered once there's more than one -- see
+  // renderStatsBlock) opens that country's own club list on its own page,
+  // filtered client-side from the stats already loaded here.
+  root.querySelectorAll("[data-country-row]").forEach((row) => {
     row.addEventListener("click", () => {
-      state.statsGroupDetail = {
-        groupId: row.dataset.groupId,
-        groupName: row.dataset.groupName,
-        country: row.dataset.groupCountry,
-      };
-      state.statsGroupDetailStatus = "idle";
-      state.statsGroupDetailData = null;
-      pushPage("stats-group-detail");
+      state.statsCountryDetail = { country: row.dataset.countryRow };
+      pushPage("stats-country-detail");
     });
   });
+
+  wireSearchFilter(root, "statsSearchInput", "statsSearchEmpty", "[data-search-key]", t().account.stats.noSearchResults);
 }
 
 function registerTeamSubpages() {
@@ -1237,6 +1396,56 @@ function registerTeamSubpages() {
     () => state.statsGroupDetail?.groupName || t().account.stats.title,
     (body) => loadStatsGroupDetail(body)
   );
+
+  // Per-country club list -- pushed from a country row in the "By country"
+  // list (only shown once a scope has more than one country; see
+  // renderStatsBlock). Nothing to fetch: it's a client-side filter over the
+  // stats already sitting in state.stats from the one GET /api/stats call,
+  // same idea as the "already-computed but unused" byCountry rollup this
+  // whole feature exists to finally put in front of an admin.
+  registerStackPage(
+    "stats-country-detail",
+    () => state.statsCountryDetail?.country || t().account.stats.title,
+    (body) => renderStatsCountryDetail(body)
+  );
+}
+
+function renderStatsCountryDetail(body) {
+  const s = t().account.stats;
+  const info = state.statsCountryDetail;
+  if (!info || !state.stats) { body.innerHTML = ""; return; }
+
+  const countryTotals = state.stats.byCountry.find((c) => c.country === info.country);
+  const countryGroups = state.stats.groups.filter((g) => g.country === info.country);
+
+  const totalsBlock = countryTotals ? `
+    <div class="card" style="padding:var(--space-4)">
+      <div class="stat-role-row">
+        <span class="stat-role-chip"><b>${esc(String(countryTotals.groups))}</b> ${esc(s.groupsLabel)}</span>
+        <span class="stat-role-chip"><b>${esc(String(countryTotals.leaders))}</b> ${esc(s.leadersLabel)}</span>
+        <span class="stat-role-chip"><b>${esc(String(countryTotals.fiveCount))}</b> ${esc(s.fiveLabel)}</span>
+        <span class="stat-role-chip"><b>${esc(String(countryTotals.prayedCount))}</b> ${esc(s.prayedLabel)}</span>
+        <span class="stat-role-chip"><b>${esc(String(countryTotals.invitedCount))}</b> ${esc(s.invitedLabel)}</span>
+      </div>
+    </div>` : "";
+
+  const groupsHtml = countryGroups.length
+    ? countryGroups.map((g) => groupRowHtml(g, s)).join("")
+    : `<p class="section-text" style="margin:0">${esc(s.noGroupsYet)}</p>`;
+
+  body.innerHTML = `
+    <div class="section" style="padding-top:var(--space-4)">
+      ${totalsBlock}
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin:var(--space-4) 0 4px;gap:var(--space-2)">
+        <p class="section-label" style="margin:0">${esc(s.clubsInCountryTitle)}</p>
+        ${countryGroups.length ? `<span style="font-size:11px;color:var(--tg-hint)">${esc(s.openHint)}</span>` : ""}
+      </div>
+      ${countryGroups.length > 6 ? searchInputHtml("statsCountryClubSearchInput", "statsCountryClubSearchEmpty", s.searchClubPlaceholder) : ""}
+      ${groupsHtml}
+    </div>`;
+
+  wireStatGroupRowClicks(body);
+  wireSearchFilter(body, "statsCountryClubSearchInput", "statsCountryClubSearchEmpty", "[data-search-key]", s.noSearchResults);
 }
 
 function renderStatsGroupDetail(body) {
