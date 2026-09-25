@@ -17,6 +17,8 @@ const state = {
   stats: null, // coordinator/admin: GET /api/stats response
   statsStatus: "idle", // idle | loading | loaded | error
   fiveJustToggled: null, // {id, field} | null -- see renderFiveItem's "just-toggled" pop animation
+  fiveStreak: { current: 0, prayedToday: false }, // GET/PUT /api/five's `streak` field -- see renderFive's streak badge
+  fiveMilestoneCelebrated: false, // guards the "all 5 prayed" celebration so it fires once per completion, not on every re-render
   // Which group's drill-down is open in the "stats-group-detail" stack page,
   // and what GET /api/stats/group/:id has returned for it so far. Set right
   // before pushPage("stats-group-detail") -- see wireStatsGroupRows().
@@ -1547,6 +1549,7 @@ async function loadFive() {
     try {
       const res = await window.fpApi.getFive();
       state.five = res.entries || [];
+      state.fiveStreak = res.streak || { current: 0, prayedToday: false };
       window.tgStorage.set("fp_five_list", JSON.stringify(state.five));
       return;
     } catch (err) {
@@ -1558,17 +1561,35 @@ async function loadFive() {
     try { state.five = JSON.parse(raw); } catch (e) { state.five = []; }
   }
 }
+// Returns the backend's parsed response (which now includes the updated
+// `streak`) so callers can fold it into state once the save actually lands
+// -- see applyFiveSaveResult below. Returns null on any local-only path
+// (offline, no Telegram context, backend unreachable) since there's no
+// server-computed streak to report in those cases.
 async function saveFive() {
   // Always cache locally first so nothing is lost even if the network call
   // below fails outright.
   await window.tgStorage.set("fp_five_list", JSON.stringify(state.five));
   if (window.__tg?.initData) {
     try {
-      await window.fpApi.saveFive(state.five);
+      return await window.fpApi.saveFive(state.five);
     } catch (err) {
       console.error("[first-priority-app] saveFive: backend unavailable, saved locally only:", err);
       toast(t().five.syncError, ICONS.close);
     }
+  }
+  return null;
+}
+
+// Folds a saveFive() response's streak into state and re-renders ONLY if
+// it actually changed -- saveFive() fires on every add/toggle/remove, but
+// most of those don't touch the streak, and renderFive() is a full
+// innerHTML rebuild, not worth repeating for a no-op.
+function applyFiveSaveResult(res) {
+  if (res && res.streak) {
+    const changed = JSON.stringify(res.streak) !== JSON.stringify(state.fiveStreak);
+    state.fiveStreak = res.streak;
+    if (changed) renderFive();
   }
 }
 
@@ -1576,17 +1597,38 @@ function initials(name) {
   return name.trim().slice(0, 2).toUpperCase();
 }
 
+// Russian and Ukrainian agree the noun with the number (1 / 2-4 / 5+&11-14);
+// every other language here only ever needs one word form. Keeping the
+// actual WORDS in i18n.js (streakDay/streakDayFew/streakDayMany/streakSuffix)
+// and only the grammar RULE here matches how the rest of the app splits
+// content from structure.
+function streakDayWord(n, d) {
+  if (CURRENT_LANG === "ru" || CURRENT_LANG === "uk") {
+    const mod10 = n % 10, mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return d.streakDay;
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return d.streakDayFew;
+    return d.streakDayMany;
+  }
+  return n === 1 ? d.streakDay : d.streakDayMany;
+}
+function formatStreak(n, d) {
+  return `${n} ${streakDayWord(n, d)} ${d.streakSuffix}`;
+}
+
 function renderFive() {
   const d = t().five;
   const full = state.five.length >= 5;
   el.pages.five.innerHTML = `
     <div class="section fade-in" style="padding-top:var(--space-6)">
-      <div class="five-card">
+      <div class="five-card" id="fiveHeroCard">
         <h2 class="display" style="text-transform:none">${esc(d.heroTitle)}</h2>
         <p>${esc(d.heroSub)}</p>
         <div class="five-progress">
           ${[0, 1, 2, 3, 4].map(i => `<div class="five-progress-slot ${i < state.five.length ? "filled" : ""}"></div>`).join("")}
         </div>
+        ${state.fiveStreak && state.fiveStreak.current > 0
+          ? `<div class="five-streak">${ICONS.flame}<span>${esc(formatStreak(state.fiveStreak.current, d))}</span></div>`
+          : ""}
       </div>
 
       <div class="five-add ${full ? "disabled" : ""}" id="fiveAddRow">
@@ -1614,7 +1656,7 @@ function renderFive() {
     const name = input.value.trim();
     if (!name || state.five.length >= 5) return;
     state.five.push({ id: uid(), name, prayed: false, invited: false });
-    saveFive();
+    saveFive().then(applyFiveSaveResult);
     renderFive();
     toast(t().five.toastAdded, ICONS.check);
     window.haptic.notification("success");
@@ -1633,7 +1675,13 @@ function renderFive() {
       // one badge that actually changed) and it's cleared right after, so
       // an unrelated later re-render never replays the pop.
       state.fiveJustToggled = { id, field };
-      saveFive();
+      // Kick off the save immediately but don't wait on it for the
+      // OPTIMISTIC re-render right below -- the toggle pop and haptic need
+      // to feel instant. The backend's authoritative streak (computed
+      // inside the same PUT that saves this toggle) is folded in and
+      // re-rendered separately, once the network round-trip actually
+      // resolves; see applyFiveSaveResult.
+      const savePromise = saveFive();
       renderFive();
       state.fiveJustToggled = null;
       window.haptic.impact("medium");
@@ -1641,12 +1689,13 @@ function renderFive() {
         toast(field === "prayed" ? t().five.toastPrayed : t().five.toastInvited, field === "prayed" ? ICONS.praying : ICONS.invite);
         window.sound?.success();
       }
+      savePromise.then(applyFiveSaveResult);
     });
   });
   el.pages.five.querySelectorAll("[data-remove]").forEach((btn) => {
     btn.addEventListener("click", () => {
       state.five = state.five.filter((p) => p.id !== btn.dataset.remove);
-      saveFive();
+      saveFive().then(applyFiveSaveResult);
       renderFive();
       toast(t().five.toastRemoved, ICONS.trash);
       window.haptic.impact("light");
@@ -1654,6 +1703,37 @@ function renderFive() {
   });
 
   window.wireUpPressFeedback(el.pages.five);
+
+  // Celebrate completing the whole card for the day -- once per completion,
+  // not on every re-render while it's still fully checked off (switching
+  // tabs and coming back shouldn't replay it). Resets as soon as any entry
+  // is un-prayed, so finishing the card again later (a new day, or after
+  // editing) celebrates again.
+  const allPrayed = state.five.length === 5 && state.five.every((p) => p.prayed);
+  if (allPrayed && !state.fiveMilestoneCelebrated) {
+    state.fiveMilestoneCelebrated = true;
+    const card = document.getElementById("fiveHeroCard");
+    if (card) {
+      card.classList.add("milestone-pop");
+      window.setTimeout(() => card.classList.remove("milestone-pop"), 900);
+    }
+    // Delayed on purpose: this always fires from inside the SAME toggle
+    // click that just completed the card, right before that click handler
+    // shows its own routine "Отмечено — вы молитесь" toast (see the
+    // "prayed" branch above/below) -- calling toast() immediately here
+    // would just get overwritten a moment later by that routine one, and
+    // the milestone message would never actually be seen. Letting the
+    // routine toast have its moment first, then swapping in the
+    // celebration once it's been read, is worth more than shaving off
+    // this short wait.
+    window.setTimeout(() => {
+      toast(d.milestoneToast, ICONS.star);
+      window.haptic.notification("success");
+      window.sound?.success();
+    }, 1500);
+  } else if (!allPrayed) {
+    state.fiveMilestoneCelebrated = false;
+  }
 }
 
 function renderFiveItem(p, d) {

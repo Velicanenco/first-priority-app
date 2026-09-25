@@ -1102,6 +1102,28 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
 }
 .five-progress-slot.filled { background: var(--focus); }
 
+.five-streak {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: var(--space-3);
+  padding: 5px 10px 5px 8px;
+  border-radius: 999px;
+  background: rgba(242,98,44,.18);
+  color: #ffb28f;
+  font-size: 12.5px; font-weight: 800; letter-spacing: .01em;
+  position: relative;
+}
+.five-streak svg { width: 14px; height: 14px; color: var(--hook); }
+
+/* Brief warm pulse around the whole card when the "My 5" list is fully
+   prayed for -- see state.fiveMilestoneCelebrated in app.js. Plays once
+   per completion, never on a plain re-render while already complete. */
+@keyframes five-milestone-glow {
+  0% { box-shadow: 0 0 0 0 rgba(242,98,44,.55); }
+  60% { box-shadow: 0 0 0 18px rgba(242,98,44,0); }
+  100% { box-shadow: 0 0 0 0 rgba(242,98,44,0); }
+}
+.five-card.milestone-pop { animation: five-milestone-glow 900ms ease-out; }
+
 .five-list { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-4); }
 .five-item {
   display: flex; align-items: center; gap: var(--space-3);
