@@ -1657,7 +1657,24 @@ function renderFive() {
 }
 
 function renderFiveItem(p, d) {
-  const justToggled = state.fiveJustToggled?.id === p.id ? state.fiveJustToggled.field : null;
+  // Bug found during a design review: this used to be
+  // `state.fiveJustToggled?.id === p.id ? state.fiveJustToggled.field : null`.
+  // The `?.` only guards the LEFT side of the comparison -- if
+  // state.fiveJustToggled is null (its normal idle value, see initial state
+  // above) AND a given entry's `p.id` happens to be undefined/null (a stale
+  // locally-cached "My 5" entry from before `id` was part of the saved
+  // shape, or any future data shape hiccup), `undefined === undefined` is
+  // true, and the code then read `.field` off `state.fiveJustToggled`
+  // itself -- which is null, not the object it was just compared against --
+  // throwing "Cannot read properties of null (reading 'field')". Because
+  // renderFive() builds its whole HTML string in one synchronous pass, that
+  // throw aborted the update entirely, leaving the "Мои 5" tab frozen on
+  // whatever it had rendered last (in practice, its very first paint, before
+  // the interface language was even set and before real entries had loaded)
+  // -- which is exactly the "always in English, always empty" symptom this
+  // was reported as. Requiring state.fiveJustToggled to be truthy before
+  // ever touching its .field removes the null-dereference outright.
+  const justToggled = (state.fiveJustToggled && state.fiveJustToggled.id === p.id) ? state.fiveJustToggled.field : null;
   const prayPop = justToggled === "prayed" ? " just-toggled" : "";
   const invitePop = justToggled === "invited" ? " just-toggled" : "";
   return `
