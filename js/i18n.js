@@ -68,6 +68,8 @@ ru: {
     openLabel: "Открыть разбор недели",
     agendaTitle: "Пример встречи · 30 минут",
     teamRunsLabel: "Ведёт", noteLabel: "Важно",
+    teamStepsTitle: "Как организовать команду",
+    hookTipsTitle: "Как провести неделю Hook",
     weeks: {
       focus: {
         num: "Неделя 1", name: "FOCUS", team: "Команда Pray",
@@ -87,6 +89,12 @@ ru: {
           { l: "E", t: "Encourage", d: "Участники делятся тем, чему Бог учил их в церкви, при изучении Писания или во время личной молитвы." },
         ],
         note: "Группа — 3–4 человека (максимум 6–8), предпочтительно одного пола. Всё, чем делятся в Focus-группе, остаётся конфиденциальным.",
+        teamSteps: [
+          "Назначьте двух лидеров-подростков из Молодёжного совета ко-капитанами команды Pray.",
+          "Решите, как команда будет служить: молиться до и во время встреч, организовать пространство для молитвы и поклонения, собирать молитвенные нужды у группы.",
+          "Подготовьте неделю Focus по «Руководству по планированию недели Focus».",
+          "Добавьте что-то своё: молитвенные прогулки, ящик для молитвенных нужд, пост в соцсетях, который вдохновит остальных молиться.",
+        ],
       },
       inspire: {
         num: "Неделя 2", name: "INSPIRE", team: "Команда Bless",
@@ -105,6 +113,12 @@ ru: {
           "Спикер не затрагивает деноминационные вопросы — делится своим свидетельством и ободряет жить для Христа.",
         ],
         note: "Не забудьте напомнить спикеру о встрече звонком и назначить, кто его встретит и проводит в зал.",
+        teamSteps: [
+          "Назначьте двух лидеров-подростков из Молодёжного совета ко-капитанами команды Bless.",
+          "Решите, как команда будет служить: встречать участников на входе, писать ободряющие записки сверстникам, лидерам и гостям.",
+          "Подготовьте неделю Inspire по «Руководству по планированию недели Bless».",
+          "Добавьте что-то своё: ободряющие записки учителям, благотворительный сбор подарков к празднику.",
+        ],
       },
       share: {
         num: "Неделя 3", name: "SHARE", team: "Команда Serve",
@@ -118,6 +132,12 @@ ru: {
         ],
         note: "Спикеры подают форму «История моей веры» тренеру минимум за неделю и заранее проходят с ним подготовку — чтобы свидетельство было ясным и без разногласий.",
         witnessCta: true,
+        teamSteps: [
+          "Назначьте двух лидеров-подростков из Молодёжного совета ко-капитанами команды Serve.",
+          "Решите, как команда будет служить: готовить пространство до встречи и убирать после, готовить напитки и закуски.",
+          "Подготовьте неделю Share по «Руководству по планированию недели Share».",
+          "Добавьте что-то своё: бескорыстный поступок для сообщества — например, уборка в парке — или разговор со школьной администрацией о том, чем можно помочь.",
+        ],
       },
       hook: {
         num: "Неделя 4", name: "HOOK", team: "Команда Tell",
@@ -130,6 +150,18 @@ ru: {
           { t: "Карточки «Ответ»", m: "4" },
         ],
         note: "Атмосфера непринуждённая и весёлая — это встреча для тех, кто ещё не знает Христа. Обязательно оставьте время на заполнение карточек «Ответ» в конце.",
+        teamSteps: [
+          "Назначьте двух лидеров-подростков из Молодёжного совета ко-капитанами команды Tell.",
+          "Решите, как команда будет служить: продвигать встречу, следить, чтобы Евангелие прозвучало и новые верующие включились в жизнь церкви, назначить время крещения.",
+          "Подготовьте неделю Hook по «Руководству по планированию недели Tell».",
+          "Добавьте что-то своё: делитесь Евангелием через печатные или цифровые материалы, запустите тренд в соцсетях, где подростки рассказывают личные истории.",
+        ],
+        hookTips: [
+          "Держите атмосферу непринуждённой и весёлой на всей встрече, а не только в начале — музыка, снэки и общение до самой презентации Евангелия помогут гостю не почувствовать себя «выделенным».",
+          "Пригласи одного друга: если каждый участник приведёт хотя бы одного человека, который ещё не знает Христа, каждый месяц будет много новых гостей.",
+          "Обязательно оставьте время на карточки «Ответ» в конце — не дайте спикеру говорить слишком долго.",
+          "Соберите все карточки, когда молодёжь расходится, и в тот же день передайте контакты тому, кто пригласил этого человека, — чтобы сразу начать Connect.",
+        ],
       },
     },
     connectLabel: "После Hook",
@@ -370,6 +402,8 @@ en: {
     openLabel: "Open week breakdown",
     agendaTitle: "Sample meeting · 30 minutes",
     teamRunsLabel: "Runs it", noteLabel: "Note",
+    teamStepsTitle: "How to set up the team",
+    hookTipsTitle: "How to run Hook Week",
     weeks: {
       focus: {
         num: "Week 1", name: "FOCUS", team: "Pray Team",
@@ -389,6 +423,12 @@ en: {
           { l: "E", t: "Encourage", d: "Members share what God has been teaching them at church, in Scripture, or in personal prayer." },
         ],
         note: "Groups of 3–4 (max 6–8), preferably same gender. Everything shared in a Focus Group stays confidential.",
+        teamSteps: [
+          "Assign two student leaders from the Youth Council as Pray Team co-captains.",
+          "Decide how the team will serve: praying before or during meetings, setting up a space for worship and prayer, collecting prayer requests from the group.",
+          "Prepare Focus Week using the “Focus Week Planning Guide”.",
+          "Add something of your own: prayer walks, a prayer-request box, a social post that inspires others to pray.",
+        ],
       },
       inspire: {
         num: "Week 2", name: "INSPIRE", team: "Bless Team",
@@ -407,6 +447,12 @@ en: {
           "The speaker avoids denominational topics — sharing only their testimony and encouraging others to live for Christ.",
         ],
         note: "Remember to call and remind the speaker about the meeting, and assign someone to greet and host them.",
+        teamSteps: [
+          "Assign two student leaders from the Youth Council as Bless Team co-captains.",
+          "Decide how the team will serve: greeting people at the door, writing encouraging notes for peers, leaders and guests.",
+          "Prepare Inspire Week using the “Bless Week Planning Guide”.",
+          "Add something of your own: encouraging notes for teachers, a holiday gift drive.",
+        ],
       },
       share: {
         num: "Week 3", name: "SHARE", team: "Serve Team",
@@ -420,6 +466,12 @@ en: {
         ],
         note: "Speakers submit a “My Faith Story” form to the coach at least a week ahead and prepare together beforehand, so the testimony is clear and free of division.",
         witnessCta: true,
+        teamSteps: [
+          "Assign two student leaders from the Youth Council as Serve Team co-captains.",
+          "Decide how the team will serve: setting up before the meeting and cleaning up after, preparing drinks and snacks.",
+          "Prepare Share Week using the “Serve Week Planning Guide”.",
+          "Add something of your own: a selfless act for the community — like cleaning up a park — or asking your school's staff how you can help.",
+        ],
       },
       hook: {
         num: "Week 4", name: "HOOK", team: "Tell Team",
@@ -432,6 +484,18 @@ en: {
           { t: "Response cards", m: "4" },
         ],
         note: "Keep the atmosphere relaxed and fun — this meeting is for people who don't know Christ yet. Always leave time at the end for response cards.",
+        teamSteps: [
+          "Assign two student leaders from the Youth Council as Tell Team co-captains.",
+          "Decide how the team will serve: promoting the event, making sure the Gospel gets shared and new believers get connected to the church, scheduling baptisms.",
+          "Prepare Hook Week using the “Tell Week Planning Guide”.",
+          "Add something of your own: sharing the Gospel through print or digital materials, starting a social trend where students tell their own stories.",
+        ],
+        hookTips: [
+          "Keep the whole meeting relaxed and fun, not just the start — music, snacks and hangout time right up to the Gospel presentation help a guest not feel singled out.",
+          "Invite one friend: if every participant brings just one person who doesn't know Christ, that's a lot of new guests every month.",
+          "Always leave time for response cards at the end — don't let the speaker run long and eat into it.",
+          "Collect every card as students leave, and hand the contact to whoever invited that person the same day, so Connect can start right away.",
+        ],
       },
     },
     connectLabel: "After Hook",
@@ -672,6 +736,8 @@ ro: {
     openLabel: "Deschide detaliile săptămânii",
     agendaTitle: "Exemplu de întâlnire · 30 de minute",
     teamRunsLabel: "Condusă de", noteLabel: "Important",
+    teamStepsTitle: "Cum organizezi echipa",
+    hookTipsTitle: "Cum desfășori Săptămâna Hook",
     weeks: {
       focus: {
         num: "Săptămâna 1", name: "FOCUS", team: "Echipa Pray",
@@ -691,6 +757,12 @@ ro: {
           { l: "E", t: "Encourage", d: "Participanții împărtășesc ce i-a învățat Dumnezeu la biserică, în studiul Scripturii sau în rugăciunea personală." },
         ],
         note: "Grupuri de 3–4 persoane (maximum 6–8), de preferință de același gen. Tot ce se împărtășește într-o grupă Focus rămâne confidențial.",
+        teamSteps: [
+          "Desemnați doi lideri-adolescenți din Consiliul de tineret drept co-căpitani ai Echipei Pray.",
+          "Decideți cum va sluji echipa: să se roage înainte sau în timpul întâlnirilor, să pregătească un spațiu pentru închinare și rugăciune, să adune cererile de rugăciune ale grupului.",
+          "Pregătiți Săptămâna Focus folosind „Ghidul de planificare a Săptămânii Focus”.",
+          "Adăugați ceva propriu: plimbări de rugăciune, o cutie pentru cereri de rugăciune, o postare pe rețelele sociale care să-i inspire pe alții să se roage.",
+        ],
       },
       inspire: {
         num: "Săptămâna 2", name: "INSPIRE", team: "Echipa Bless",
@@ -709,6 +781,12 @@ ro: {
           "Vorbitorul evită subiectele denominaționale — împărtășește doar mărturia sa și încurajează tinerii să trăiască pentru Hristos.",
         ],
         note: "Nu uitați să sunați vorbitorul pentru a-i reaminti de întâlnire și să stabiliți cine îl întâmpină și îl conduce în sală.",
+        teamSteps: [
+          "Desemnați doi lideri-adolescenți din Consiliul de tineret drept co-căpitani ai Echipei Bless.",
+          "Decideți cum va sluji echipa: să întâmpine participanții la intrare, să scrie bilețele de încurajare pentru colegi, lideri și invitați.",
+          "Pregătiți Săptămâna Inspire folosind „Ghidul de planificare a Săptămânii Bless”.",
+          "Adăugați ceva propriu: bilețele de încurajare pentru profesori, o colectă de cadouri de sărbători.",
+        ],
       },
       share: {
         num: "Săptămâna 3", name: "SHARE", team: "Echipa Serve",
@@ -722,6 +800,12 @@ ro: {
         ],
         note: "Vorbitorii depun formularul „Povestea credinței mele” mentorului cu cel puțin o săptămână înainte și se pregătesc împreună cu el, ca mărturia să fie clară și fără controverse.",
         witnessCta: true,
+        teamSteps: [
+          "Desemnați doi lideri-adolescenți din Consiliul de tineret drept co-căpitani ai Echipei Serve.",
+          "Decideți cum va sluji echipa: pregătirea spațiului înainte de întâlnire și curățenia după, pregătirea băuturilor și gustărilor.",
+          "Pregătiți Săptămâna Share folosind „Ghidul de planificare a Săptămânii Serve”.",
+          "Adăugați ceva propriu: un gest dezinteresat pentru comunitate — de exemplu, curățarea unui parc — sau o discuție cu conducerea școlii despre cum puteți ajuta.",
+        ],
       },
       hook: {
         num: "Săptămâna 4", name: "HOOK", team: "Echipa Tell",
@@ -734,6 +818,18 @@ ro: {
           { t: "Carduri de răspuns", m: "4" },
         ],
         note: "Păstrați o atmosferă relaxată și distractivă — această întâlnire este pentru cei care nu-L cunosc încă pe Hristos. Lăsați mereu timp la final pentru cardurile de răspuns.",
+        teamSteps: [
+          "Desemnați doi lideri-adolescenți din Consiliul de tineret drept co-căpitani ai Echipei Tell.",
+          "Decideți cum va sluji echipa: promovarea întâlnirii, asigurarea că Evanghelia este prezentată clar și noii credincioși sunt integrați în biserică, stabilirea unei date pentru botez.",
+          "Pregătiți Săptămâna Hook folosind „Ghidul de planificare a Săptămânii Tell”.",
+          "Adăugați ceva propriu: împărtășiți Evanghelia prin materiale tipărite sau digitale, porniți un trend pe rețelele sociale în care tinerii își spun povestea personală.",
+        ],
+        hookTips: [
+          "Păstrați atmosfera relaxată și distractivă pe toată durata întâlnirii, nu doar la început — muzica, gustările și socializarea până chiar înainte de prezentarea Evangheliei îl ajută pe invitat să nu se simtă „scos în evidență”.",
+          "Invită un prieten: dacă fiecare participant aduce măcar o persoană care nu-L cunoaște pe Hristos, veți avea mulți invitați noi în fiecare lună.",
+          "Lăsați mereu timp pentru cardurile de răspuns la final — nu lăsați vorbitorul să depășească timpul alocat.",
+          "Adunați toate cardurile când tinerii pleacă și predați aceeași zi contactul celui care a invitat acea persoană, ca procesul Connect să înceapă imediat.",
+        ],
       },
     },
     connectLabel: "După Hook",
@@ -974,6 +1070,8 @@ uk: {
     openLabel: "Відкрити розбір тижня",
     agendaTitle: "Приклад зустрічі · 30 хвилин",
     teamRunsLabel: "Веде", noteLabel: "Важливо",
+    teamStepsTitle: "Як організувати команду",
+    hookTipsTitle: "Як провести тиждень Hook",
     weeks: {
       focus: {
         num: "Тиждень 1", name: "FOCUS", team: "Команда Pray",
@@ -993,6 +1091,12 @@ uk: {
           { l: "E", t: "Encourage", d: "Учасники діляться тим, чого Бог навчив їх у церкві, під час вивчення Писання або особистої молитви." },
         ],
         note: "Група — 3–4 особи (максимум 6–8), бажано однієї статі. Усе, чим діляться у Focus-групі, залишається конфіденційним.",
+        teamSteps: [
+          "Призначте двох лідерів-підлітків із Молодіжної ради ко-капітанами команди Pray.",
+          "Вирішіть, як команда служитиме: молитися до або під час зустрічей, підготувати простір для поклоніння й молитви, збирати молитовні потреби групи.",
+          "Підготуйте тиждень Focus за «Керівництвом з планування тижня Focus».",
+          "Додайте щось своє: молитовні прогулянки, скриньку для молитовних потреб, пост у соцмережах, який надихне інших молитися.",
+        ],
       },
       inspire: {
         num: "Тиждень 2", name: "INSPIRE", team: "Команда Bless",
@@ -1011,6 +1115,12 @@ uk: {
           "Спікер не торкається деномінаційних питань — ділиться своїм свідченням і заохочує жити для Христа.",
         ],
         note: "Не забудьте нагадати спікеру про зустріч телефоном і призначити, хто його зустріне й проведе до залу.",
+        teamSteps: [
+          "Призначте двох лідерів-підлітків із Молодіжної ради ко-капітанами команди Bless.",
+          "Вирішіть, як команда служитиме: зустрічати учасників на вході, писати підбадьорливі записки одноліткам, лідерам і гостям.",
+          "Підготуйте тиждень Inspire за «Керівництвом з планування тижня Bless».",
+          "Додайте щось своє: підбадьорливі записки для вчителів, благодійний збір подарунків до свята.",
+        ],
       },
       share: {
         num: "Тиждень 3", name: "SHARE", team: "Команда Serve",
@@ -1024,6 +1134,12 @@ uk: {
         ],
         note: "Спікери подають форму «Історія моєї віри» наставнику щонайменше за тиждень і заздалегідь готуються з ним — щоб свідчення було ясним і без розбіжностей.",
         witnessCta: true,
+        teamSteps: [
+          "Призначте двох лідерів-підлітків із Молодіжної ради ко-капітанами команди Serve.",
+          "Вирішіть, як команда служитиме: готувати простір до зустрічі й прибирати після, готувати напої та закуски.",
+          "Підготуйте тиждень Share за «Керівництвом з планування тижня Share».",
+          "Додайте щось своє: безкорисливий вчинок для громади — наприклад, прибирання в парку — або розмова зі шкільною адміністрацією про те, чим можна допомогти.",
+        ],
       },
       hook: {
         num: "Тиждень 4", name: "HOOK", team: "Команда Tell",
@@ -1036,6 +1152,18 @@ uk: {
           { t: "Картки «Відповідь»", m: "4" },
         ],
         note: "Атмосфера невимушена й весела — ця зустріч для тих, хто ще не знає Христа. Обов'язково залиште час для карток «Відповідь» наприкінці.",
+        teamSteps: [
+          "Призначте двох лідерів-підлітків із Молодіжної ради ко-капітанами команди Tell.",
+          "Вирішіть, як команда служитиме: просувати зустріч, стежити, щоб Євангеліє прозвучало і нові віруючі долучилися до життя церкви, призначити час хрещення.",
+          "Підготуйте тиждень Hook за «Керівництвом з планування тижня Tell».",
+          "Додайте щось своє: діліться Євангелієм через друковані чи цифрові матеріали, запустіть тренд у соцмережах, де підлітки розповідають особисті історії.",
+        ],
+        hookTips: [
+          "Тримайте атмосферу невимушеною і веселою впродовж усієї зустрічі, а не лише на початку — музика, снеки й спілкування аж до самої презентації Євангелія допоможуть гостю не почуватися «виділеним».",
+          "Запроси одного друга: якщо кожен учасник приведе хоча б одну людину, яка ще не знає Христа, щомісяця буде багато нових гостей.",
+          "Обов'язково залиште час для карток «Відповідь» наприкінці — не дайте спікеру говорити занадто довго.",
+          "Зберіть усі картки, коли молодь розходиться, і того ж дня передайте контакти тому, хто запросив цю людину, — щоб одразу розпочати Connect.",
+        ],
       },
     },
     connectLabel: "Після Hook",

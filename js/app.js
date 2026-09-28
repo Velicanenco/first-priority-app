@@ -587,8 +587,23 @@ function renderWeekSheetContent(wk) {
       <div class="myfive-mini">
         <p>${esc(t().five.heroSub)}</p>
         <button class="btn tg-press" id="openFiveFromHook">${esc(t().fish.fiveCardBtn)} ${ICONS.arrowUpRight}</button>
-      </div>`;
+      </div>
+      ${w.hookTips && w.hookTips.length ? `
+      <h3 style="font-size:16px;margin:20px 0 8px">${esc(d.hookTipsTitle)}</h3>
+      <div class="card">
+        ${w.hookTips.map((s, i) => `
+          <div class="list-row"><div class="list-row-num">${i + 1}</div><div class="list-row-body"><p>${esc(s)}</p></div></div>
+        `).join("")}
+      </div>` : ""}`;
   }
+
+  const teamStepsBlock = (w.teamSteps && w.teamSteps.length) ? `
+      <h3 style="font-size:16px;margin:20px 0 8px">${esc(d.teamStepsTitle)}</h3>
+      <div class="card">
+        ${w.teamSteps.map((s, i) => `
+          <div class="list-row"><div class="list-row-num">${i + 1}</div><div class="list-row-body"><p>${esc(s)}</p></div></div>
+        `).join("")}
+      </div>` : "";
 
   el.sheetBody.innerHTML = `
     <span class="sheet-band" style="background:${bandColorMap[wk]};color:${bandInkMap[wk]}">${esc(w.num)} · ${esc(w.team)}</span>
@@ -598,6 +613,7 @@ function renderWeekSheetContent(wk) {
       <div class="agenda">
         ${w.agenda.map(a => `<div class="agenda-row"><span>${esc(a.t)}</span><span>${esc(a.m)} ${esc(t().common.min)}</span></div>`).join("")}
       </div>
+      ${teamStepsBlock}
       ${extra}
       ${w.note ? `<div class="card" style="margin-top:16px"><p class="section-label" style="margin-bottom:6px">${esc(d.noteLabel)}</p><p style="font-size:13.5px;line-height:1.5;color:var(--ink-soft);margin:0">${esc(w.note)}</p></div>` : ""}
     </div>
