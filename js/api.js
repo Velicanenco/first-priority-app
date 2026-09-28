@@ -83,5 +83,11 @@
     saveFive: (entries) => apiFetch("/api/five", { method: "PUT", body: { entries } }),
     getStats: () => apiFetch("/api/stats"),
     getGroupStats: (groupId) => apiFetch("/api/stats/group/" + encodeURIComponent(groupId)),
+    submitPrayerNeed: (text) => apiFetch("/api/prayer-needs", { method: "POST", body: { text } }),
+    getRandomPrayerNeed: () => apiFetch("/api/prayer-needs/random"),
+    prayForNeed: (id) => apiFetch("/api/prayer-needs/" + encodeURIComponent(id) + "/pray", { method: "POST" }),
+    getMyPrayerNeeds: () => apiFetch("/api/prayer-needs/mine"),
+    deletePrayerNeed: (id) => apiFetch("/api/prayer-needs/" + encodeURIComponent(id), { method: "DELETE" }),
+    getLatestEncouragement: () => apiFetch("/api/encouragements/latest"),
   };
 })();

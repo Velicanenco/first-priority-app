@@ -1305,9 +1305,70 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
 .stat-group-nums b { color: var(--ink); font-weight: 700; }
 
 .five-empty { text-align: center; padding: var(--space-6) var(--space-4); color: var(--tg-hint); font-size: 13.5px; }
-.five-verse { margin-top: var(--space-4); padding: var(--space-4); border-radius: var(--radius-md); background: var(--tg-secondary-bg); }
-.five-verse p { font-size: 13.5px; font-style: italic; line-height: 1.5; margin: 0 0 4px; color: var(--ink-soft); }
-.five-verse cite { font-size: 12px; font-weight: 700; color: var(--tg-hint); font-style: normal; }
+
+/* ---------------------------------------------------------------------- */
+/* "My 5" extras — random verse, encouragements feed, prayer-needs board   */
+/* ---------------------------------------------------------------------- */
+
+.verse-card { margin-top: var(--space-4); }
+.verse-card p { font-size: 13.5px; font-style: italic; line-height: 1.5; margin: 0 0 10px; color: var(--ink-soft); }
+.verse-card-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.verse-card-foot cite { font-size: 12px; font-weight: 700; color: var(--tg-hint); font-style: normal; }
+.verse-next-btn {
+  flex: none; width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--paper); color: var(--ink-soft); border: none;
+}
+.verse-next-btn svg { width: 15px; height: 15px; }
+
+.encouragement-card { margin-top: var(--space-3); padding: 0; overflow: hidden; }
+.encouragement-kicker {
+  display: block; font-size: 11px; font-weight: 700; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--tg-hint); padding: var(--space-3) var(--space-4) 0;
+}
+.encouragement-photo { width: 100%; display: block; aspect-ratio: 4/3; object-fit: cover; margin-top: 8px; background: var(--halftone); }
+.encouragement-caption { font-size: 13px; line-height: 1.5; color: var(--ink-soft); margin: 0; padding: var(--space-3) var(--space-4) var(--space-4); }
+
+.prayer-card { margin-top: var(--space-3); }
+.prayer-section-title { font-size: 15px; margin: 0 0 4px; }
+.prayer-section-sub { font-size: 12.5px; line-height: 1.45; color: var(--tg-hint); margin: 0; }
+
+.prayer-feed { margin-top: var(--space-4); }
+.prayer-feed-empty { text-align: center; padding: var(--space-4) 0; color: var(--tg-hint); font-size: 12.5px; }
+.prayer-feed-kicker-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.prayer-feed-kicker { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--tg-hint); }
+.prayer-feed-next {
+  flex: none; width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--paper); color: var(--ink-soft); border: none;
+}
+.prayer-feed-next svg { width: 13px; height: 13px; }
+.prayer-feed-card { background: var(--paper); border-radius: var(--radius-sm); padding: var(--space-3); }
+.prayer-feed-card p { font-size: 13.5px; line-height: 1.5; margin: 0 0 10px; color: var(--ink); }
+.prayer-feed-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.prayer-feed-author { font-size: 12px; color: var(--tg-hint); }
+.prayer-feed-pray-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: none; border-radius: 999px; padding: 8px 14px;
+  font-size: 12.5px; font-weight: 700; background: var(--share); color: var(--share-ink);
+}
+.prayer-feed-pray-btn svg { width: 13px; height: 13px; }
+.prayer-feed-pray-btn[data-done="true"] { background: var(--tg-secondary-bg); color: var(--tg-hint); }
+.prayer-feed-pray-btn:disabled { opacity: .8; }
+.prayer-feed-count { margin-top: 8px; font-size: 11.5px; color: var(--tg-hint); }
+
+.prayer-mine { margin-top: var(--space-4); border-top: 1px solid var(--line); padding-top: var(--space-3); }
+.prayer-mine h4 { font-size: 12px; margin: 0 0 8px; color: var(--tg-hint); text-transform: uppercase; letter-spacing: .03em; font-weight: 700; }
+.prayer-mine-item { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-2); padding: var(--space-2) 0; border-bottom: 1px solid var(--line); }
+.prayer-mine-item:last-child { border-bottom: none; }
+.prayer-mine-body p { margin: 0 0 3px; font-size: 13px; line-height: 1.4; }
+.prayer-mine-body span { font-size: 11.5px; color: var(--tg-hint); }
+.prayer-mine-delete {
+  flex: none; width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent; color: var(--tg-hint); border: none;
+}
+.prayer-mine-delete svg { width: 13px; height: 13px; }
 
 /* toast */
 #toast {

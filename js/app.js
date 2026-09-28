@@ -31,6 +31,14 @@ const state = {
   // state.stats.groups/byCountry, since the backend already rolls those up
   // in one GET /api/stats call.
   statsCountryDetail: null, // { country } | null
+
+  // "My 5" extras: random verse, community prayer board, encouragements feed.
+  fiveVerseIndex: -1, // index into t().five.verseBank currently shown; -1 = "not picked yet" (renderFive lazily randomizes it on first paint) — see pickRandomVerse()
+  prayerFeed: null, // { id, text, authorName, prayedCount, alreadyPrayed } | null — the one "someone else's need" currently shown
+  prayerFeedStatus: "idle", // idle | loading | loaded | empty | error
+  prayerFeedBusy: false, // true while a pray-tap or next-need fetch is in flight, to prevent double-taps
+  myPrayerNeeds: [], // GET /api/prayer-needs/mine — this user's own posted needs + their prayed counts
+  encouragement: null, // { id, photo_path, caption, created_at } | null — GET /api/encouragements/latest
 };
 
 const el = {
@@ -1740,9 +1748,128 @@ function formatStreak(n, d) {
   return `${n} ${streakDayWord(n, d)} ${d.streakSuffix}`;
 }
 
+// Same agreement-rule split as streakDayWord above, just for "N people
+// prayed" instead of "N days" -- ru/uk need the 1 / 2-4 / 5+&11-14 split,
+// en/ro only ever need singular vs. plural (prayerPersonFew is simply
+// undefined for those two, so the ru/uk-only branch is the only place it's
+// read).
+function personWord(n, d) {
+  if (CURRENT_LANG === "ru" || CURRENT_LANG === "uk") {
+    const mod10 = n % 10, mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return d.prayerPersonOne;
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return d.prayerPersonFew;
+    return d.prayerPersonMany;
+  }
+  return n === 1 ? d.prayerPersonOne : d.prayerPersonMany;
+}
+function formatPrayedCount(n, d) {
+  return `${n} ${personWord(n, d)}`;
+}
+
+// Picks a new random verse from the CURRENT language's bank, different
+// from whatever is showing right now (when the bank has more than one
+// verse) -- otherwise "another verse" could silently redraw the same one
+// and look broken to the user tapping the shuffle button.
+function pickRandomVerse(d) {
+  const bank = d.verseBank || [];
+  if (bank.length <= 1) { state.fiveVerseIndex = 0; return; }
+  let next = Math.floor(Math.random() * bank.length);
+  if (next === state.fiveVerseIndex) next = (next + 1) % bank.length;
+  state.fiveVerseIndex = next;
+}
+
+/* ------------------------------------------------------------------ */
+/* "My 5" extras: prayer-needs board + encouragements feed              */
+/* ------------------------------------------------------------------ */
+
+// Loads one "someone else's need" to show in the rotating prayer-feed
+// card. Called on boot and whenever the user taps "another need" or
+// finishes praying for the one on screen. Silently leaves the previous
+// card in place on failure (offline, backend cold-starting) rather than
+// flashing an error -- same tolerance as loadFive()'s local-cache fallback.
+async function loadPrayerFeed() {
+  if (!window.__tg?.initData) return;
+  state.prayerFeedStatus = "loading";
+  try {
+    const res = await window.fpApi.getRandomPrayerNeed();
+    state.prayerFeed = res.need || null;
+    state.prayerFeedStatus = res.need ? "loaded" : "empty";
+  } catch (err) {
+    console.error("[first-priority-app] loadPrayerFeed failed:", err);
+    state.prayerFeedStatus = "error";
+  }
+}
+
+async function loadMyPrayerNeeds() {
+  if (!window.__tg?.initData) return;
+  try {
+    state.myPrayerNeeds = await window.fpApi.getMyPrayerNeeds();
+  } catch (err) {
+    console.error("[first-priority-app] loadMyPrayerNeeds failed:", err);
+  }
+}
+
+async function loadEncouragement() {
+  if (!window.__tg?.initData) return;
+  try {
+    const res = await window.fpApi.getLatestEncouragement();
+    state.encouragement = res.encouragement || null;
+  } catch (err) {
+    console.error("[first-priority-app] loadEncouragement failed:", err);
+  }
+}
+
+// Renders the inner HTML for the rotating "someone else's need" card.
+// Returns "" (nothing) while idle/loading/error so a slow or failed fetch
+// never flashes an error state -- the card just doesn't appear yet, same
+// tolerance as the rest of this page's backend calls.
+function renderPrayerFeedInner(d) {
+  if (state.prayerFeedStatus === "empty") {
+    return `<div class="prayer-feed-empty">${esc(d.prayerFeedEmpty)}</div>`;
+  }
+  if (state.prayerFeedStatus !== "loaded" || !state.prayerFeed) return "";
+  const need = state.prayerFeed;
+  return `
+    <div class="prayer-feed-kicker-row">
+      <span class="prayer-feed-kicker">${esc(d.prayerFeedTitle)}</span>
+      <button id="prayerFeedNextBtn" class="prayer-feed-next tg-press" aria-label="${esc(d.prayerFeedNextAria)}">${ICONS.shuffle}</button>
+    </div>
+    <div class="prayer-feed-card">
+      <p>${esc(need.text)}</p>
+      <div class="prayer-feed-foot">
+        <span class="prayer-feed-author">${need.authorName ? esc(need.authorName) : ""}</span>
+        <button id="prayerFeedPrayBtn" class="prayer-feed-pray-btn tg-press" data-done="${!!need.alreadyPrayed}" ${need.alreadyPrayed ? "disabled" : ""}>
+          ${ICONS.praying}<span>${need.alreadyPrayed ? esc(d.prayerBtnDone) : esc(d.prayerBtn)}</span>
+        </button>
+      </div>
+      <div class="prayer-feed-count">${formatPrayedCount(need.prayedCount, d)}</div>
+    </div>
+  `;
+}
+
+function renderMyPrayerNeed(n, d) {
+  return `
+    <div class="prayer-mine-item">
+      <div class="prayer-mine-body">
+        <p>${esc(n.text)}</p>
+        <span>${formatPrayedCount(n.prayedCount, d)} ${esc(d.prayerMineSuffix)}</span>
+      </div>
+      <button class="prayer-mine-delete tg-press" data-delete-need="${n.id}" aria-label="${esc(d.prayerDeleteAria)}">${ICONS.trash}</button>
+    </div>
+  `;
+}
+
 function renderFive() {
   const d = t().five;
   const full = state.five.length >= 5;
+
+  // Lazily randomize the verse on first paint, and re-clamp whenever the
+  // language switch leaves the index pointing past a shorter bank (e.g.
+  // ru/en have 12 verses, ro/uk currently have 8) -- see pickRandomVerse().
+  const verseBank = d.verseBank || [];
+  if (state.fiveVerseIndex < 0 || state.fiveVerseIndex >= verseBank.length) pickRandomVerse(d);
+  const verse = verseBank[state.fiveVerseIndex] || { text: d.verse, ref: d.verseRef };
+
   el.pages.five.innerHTML = `
     <div class="section fade-in" style="padding-top:var(--space-6)">
       <div class="five-card" id="fiveHeroCard">
@@ -1768,9 +1895,39 @@ function renderFive() {
       </div>
       ${full ? `<p style="text-align:center;font-size:12.5px;color:var(--tg-hint);margin-top:10px">${esc(d.fullState)}</p>` : ""}
 
-      <div class="five-verse">
-        <p>${esc(d.verse)}</p>
-        <cite>${esc(d.verseRef)}</cite>
+      <div class="card verse-card">
+        <p>${esc(verse.text)}</p>
+        <div class="verse-card-foot">
+          <cite>${esc(verse.ref)}</cite>
+          <button id="fiveVerseNextBtn" class="verse-next-btn tg-press" aria-label="shuffle">${ICONS.shuffle}</button>
+        </div>
+      </div>
+
+      ${state.encouragement ? `
+      <div class="card encouragement-card">
+        <span class="encouragement-kicker">${esc(d.encouragementLabel)}</span>
+        <img src="${esc(state.encouragement.photo_path)}" alt="" class="encouragement-photo" />
+        <p class="encouragement-caption">${esc(state.encouragement.caption)}</p>
+      </div>` : ""}
+
+      <div class="card prayer-card">
+        <h3 class="prayer-section-title">${esc(d.prayerSectionTitle)}</h3>
+        <p class="prayer-section-sub">${esc(d.prayerSectionSub)}</p>
+
+        <div class="field-stack">
+          <input type="text" id="prayerInput" class="field-input" placeholder="${esc(d.prayerPlaceholder)}" maxlength="300" />
+          <button id="prayerSubmitBtn" class="btn full tg-press">${esc(d.prayerSubmit)}</button>
+        </div>
+
+        <div class="prayer-feed" id="prayerFeedEl">
+          ${renderPrayerFeedInner(d)}
+        </div>
+
+        ${state.myPrayerNeeds.length ? `
+        <div class="prayer-mine">
+          <h4>${esc(d.prayerMineTitle)}</h4>
+          ${state.myPrayerNeeds.filter(n => n.active).map(n => renderMyPrayerNeed(n, d)).join("")}
+        </div>` : ""}
       </div>
     </div>
   `;
@@ -1824,6 +1981,101 @@ function renderFive() {
       renderFive();
       toast(t().five.toastRemoved, ICONS.trash);
       window.haptic.impact("light");
+    });
+  });
+
+  const verseNextBtn = document.getElementById("fiveVerseNextBtn");
+  if (verseNextBtn) {
+    verseNextBtn.addEventListener("click", () => {
+      pickRandomVerse(d);
+      renderFive();
+      window.haptic.selection();
+    });
+  }
+
+  const prayerInput = document.getElementById("prayerInput");
+  const prayerSubmitBtn = document.getElementById("prayerSubmitBtn");
+  const submitPrayerNeed = async () => {
+    const text = prayerInput.value.trim();
+    if (!text || prayerSubmitBtn.disabled) return;
+    prayerSubmitBtn.disabled = true;
+    try {
+      await window.fpApi.submitPrayerNeed(text);
+      prayerInput.value = "";
+      toast(d.prayerToastAdded, ICONS.check);
+      window.haptic.notification("success");
+      await loadMyPrayerNeeds();
+      renderFive();
+    } catch (err) {
+      console.error("[first-priority-app] submitPrayerNeed failed:", err);
+      toast(t().five.syncError, ICONS.close);
+      window.haptic.notification("error");
+    } finally {
+      if (prayerSubmitBtn) prayerSubmitBtn.disabled = false;
+    }
+  };
+  if (prayerSubmitBtn && prayerInput) {
+    prayerSubmitBtn.addEventListener("click", submitPrayerNeed);
+    prayerInput.addEventListener("keydown", (e) => { if (e.key === "Enter") submitPrayerNeed(); });
+  }
+
+  const prayerFeedNextBtn = document.getElementById("prayerFeedNextBtn");
+  if (prayerFeedNextBtn) {
+    prayerFeedNextBtn.addEventListener("click", async () => {
+      if (state.prayerFeedBusy) return;
+      state.prayerFeedBusy = true;
+      window.haptic.selection();
+      await loadPrayerFeed();
+      state.prayerFeedBusy = false;
+      renderFive();
+    });
+  }
+
+  const prayerFeedPrayBtn = document.getElementById("prayerFeedPrayBtn");
+  if (prayerFeedPrayBtn && state.prayerFeed && !state.prayerFeed.alreadyPrayed) {
+    prayerFeedPrayBtn.addEventListener("click", async () => {
+      if (state.prayerFeedBusy) return;
+      state.prayerFeedBusy = true;
+      const needId = state.prayerFeed.id;
+      try {
+        const res = await window.fpApi.prayForNeed(needId);
+        if (state.prayerFeed && state.prayerFeed.id === needId) {
+          state.prayerFeed.alreadyPrayed = true;
+          state.prayerFeed.prayedCount = res.prayedCount;
+        }
+        window.haptic.notification("success");
+        window.sound?.success();
+        renderFive();
+        // Roll straight to the next need after a short beat, so praying
+        // through the board feels like flipping cards rather than a single
+        // static one-off action.
+        window.setTimeout(async () => {
+          await loadPrayerFeed();
+          state.prayerFeedBusy = false;
+          renderFive();
+        }, 900);
+      } catch (err) {
+        console.error("[first-priority-app] prayForNeed failed:", err);
+        toast(t().five.syncError, ICONS.close);
+        state.prayerFeedBusy = false;
+      }
+    });
+  }
+
+  el.pages.five.querySelectorAll("[data-delete-need]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.deleteNeed;
+      btn.disabled = true;
+      try {
+        await window.fpApi.deletePrayerNeed(id);
+        state.myPrayerNeeds = state.myPrayerNeeds.filter((n) => n.id !== id);
+        renderFive();
+        window.haptic.impact("light");
+      } catch (err) {
+        console.error("[first-priority-app] deletePrayerNeed failed:", err);
+        toast(t().five.syncError, ICONS.close);
+        btn.disabled = false;
+      }
     });
   });
 
@@ -1966,6 +2218,15 @@ async function boot() {
     })
     .catch((err) => console.error("[first-priority-app] loadFive chain failed:", err));
   loadMe().catch((err) => console.error("[first-priority-app] loadMe chain failed:", err));
+
+  // Same independence guarantee as loadFive/loadMe above: the prayer board,
+  // the "my needs" list, and the encouragements card are all optional
+  // extras on the "My 5" tab -- any one of them failing (or the backend
+  // still cold-starting) must never block the other two, or the five-list
+  // itself, from rendering.
+  Promise.all([loadPrayerFeed(), loadMyPrayerNeeds(), loadEncouragement()])
+    .then(() => renderFive())
+    .catch((err) => console.error("[first-priority-app] My 5 extras chain failed:", err));
 
   // Each step runs independently: one throwing (a bad translation key, a
   // missing element, anything) must not prevent the rest — including
