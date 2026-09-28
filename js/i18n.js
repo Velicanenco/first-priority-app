@@ -70,6 +70,9 @@ ru: {
     teamRunsLabel: "Ведёт", noteLabel: "Важно",
     teamStepsTitle: "Как организовать команду",
     hookTipsTitle: "Как провести неделю Hook",
+    speakerTopicsTitle: "Примеры тем для спикера",
+    meetingIdeasTitle: "Как это может выглядеть",
+    gospelMethodsTitle: "Варианты, как поделиться Евангелием",
     weeks: {
       focus: {
         num: "Неделя 1", name: "FOCUS", team: "Команда Pray",
@@ -89,6 +92,14 @@ ru: {
           { l: "E", t: "Encourage", d: "Участники делятся тем, чему Бог учил их в церкви, при изучении Писания или во время личной молитвы." },
         ],
         note: "Группа — 3–4 человека (максимум 6–8), предпочтительно одного пола. Всё, чем делятся в Focus-группе, остаётся конфиденциальным.",
+        speakerTopics: [
+          "Как управлять личными финансами",
+          "Как Бог изменил мою жизнь",
+          "Как построить крепкую семью",
+          "Отношения между парнем и девушкой",
+          "Как быть христианином в школе, на работе и на тренировках",
+          "Бог и спорт",
+        ],
         teamSteps: [
           "Назначьте двух лидеров-подростков из Молодёжного совета ко-капитанами команды Pray.",
           "Решите, как команда будет служить: молиться до и во время встреч, организовать пространство для молитвы и поклонения, собирать молитвенные нужды у группы.",
@@ -162,8 +173,51 @@ ru: {
           "Обязательно оставьте время на карточки «Ответ» в конце — не дайте спикеру говорить слишком долго.",
           "Соберите все карточки, когда молодёжь расходится, и в тот же день передайте контакты тому, кто пригласил этого человека, — чтобы сразу начать Connect.",
         ],
+        meetingIdeas: [
+          "Совместный просмотр фильма с обсуждением после",
+          "Вечер настольных игр",
+          "Игра в «Мафию»",
+          "Выезд на природу",
+          "Волонтёрская поездка в детский дом",
+        ],
       },
     },
+    gospelMethods: [
+      {
+        navTitle: "The Four",
+        navDesc: "Простой современный буклет от Cru",
+        body: [
+          "Современная версия классических «Четырёх духовных законов» от организации Cru: короткий буклет и одноимённое приложение, которые проводят через Евангелие за 5–10 минут.",
+          "Структура: 1) Бог любит тебя и хочет, чтобы ты познал Его. 2) Люди грешны и отделены от Бога, поэтому не могут познать Его в полной мере. 3) Иисус Христос — единственное Божье решение проблемы греха. 4) Мы получаем прощение и вечную жизнь, когда лично принимаем Иисуса Христа как Спасителя и Господа.",
+          "Подходит, когда есть буклет или телефон под рукой и человек готов пройти весь путь целиком, шаг за шагом.",
+        ],
+      },
+      {
+        navTitle: "Римская дорога",
+        navDesc: "Путь через стихи Послания к Римлянам",
+        body: [
+          "Последовательность стихов из Послания к Римлянам, которые по порядку показывают путь от греха к спасению — без буклета, только с Библией (или её электронной версией) в руках.",
+          "Классическая последовательность: Римлянам 3:23 (все согрешили) → Римлянам 6:23 (возмездие за грех — смерть, а дар Божий — вечная жизнь) → Римлянам 5:8 (Христос умер за нас, пока мы были грешниками) → Римлянам 10:9 (если устами исповедуешь и сердцем веруешь — спасёшься) → Римлянам 10:13 (всякий, призывающий имя Господа, спасётся).",
+          "Хорошо работает один на один, особенно если у собеседника уже есть Библия под рукой или открыто приложение с ней.",
+        ],
+      },
+      {
+        navTitle: "3 круга",
+        navDesc: "Наглядная схема из трёх пересекающихся кругов",
+        body: [
+          "Очень визуальный метод: рисуешь три круга прямо на салфетке, в блокноте или пальцем на песке — Бог задумал мир хорошим («Замысел»), человечество разрушило его грехом («Грехопадение»), и через Евангелие Бог предлагает путь назад («Евангелие»), приводящий к жизни в «Восстановлении».",
+          "Удобен, когда под рукой нет ни буклета, ни Библии — достаточно ручки и листа бумаги, а рисование само по себе удерживает внимание собеседника.",
+        ],
+      },
+      {
+        navTitle: "Мост к жизни",
+        navDesc: "Иллюстрация с пропастью и крестом-мостом",
+        body: [
+          "Классическая иллюстрация от Navigators и Cru: два берега, разделённые пропастью греха, — человек на одном берегу, Бог на другом. Никакие собственные усилия (добрые дела, религия, мораль) не могут перекинуть мост через пропасть.",
+          "Единственный мост — крест Иисуса Христа: Его смерть и воскресение соединяют человека с Богом. Изображается простым рисунком, который удобно чертить по ходу разговора.",
+        ],
+      },
+    ],
     connectLabel: "После Hook",
     connectTitle: "Connect — грузим рыбу в лодки",
     connectText: "Каждый новообращённый должен быть связан с Focus-группой и поместной церковью, где сможет расти в вере. Молодёжный совет координирует Connect на своих ежемесячных встречах, пока не будут пройдены все шаги.",
@@ -404,6 +458,9 @@ en: {
     teamRunsLabel: "Runs it", noteLabel: "Note",
     teamStepsTitle: "How to set up the team",
     hookTipsTitle: "How to run Hook Week",
+    speakerTopicsTitle: "Example speaker topics",
+    meetingIdeasTitle: "What this could look like",
+    gospelMethodsTitle: "Ways to share the gospel",
     weeks: {
       focus: {
         num: "Week 1", name: "FOCUS", team: "Pray Team",
@@ -423,6 +480,14 @@ en: {
           { l: "E", t: "Encourage", d: "Members share what God has been teaching them at church, in Scripture, or in personal prayer." },
         ],
         note: "Groups of 3–4 (max 6–8), preferably same gender. Everything shared in a Focus Group stays confidential.",
+        speakerTopics: [
+          "How to manage your personal finances",
+          "How God changed my life",
+          "How to build a strong family",
+          "Relationships",
+          "Being a Christian at school, at work, and on your team",
+          "God and sports",
+        ],
         teamSteps: [
           "Assign two student leaders from the Youth Council as Pray Team co-captains.",
           "Decide how the team will serve: praying before or during meetings, setting up a space for worship and prayer, collecting prayer requests from the group.",
@@ -496,8 +561,51 @@ en: {
           "Always leave time for response cards at the end — don't let the speaker run long and eat into it.",
           "Collect every card as students leave, and hand the contact to whoever invited that person the same day, so Connect can start right away.",
         ],
+        meetingIdeas: [
+          "A movie night with discussion afterward",
+          "Board game night",
+          "A game of Mafia",
+          "A trip out into nature",
+          "A volunteer trip to help at an orphanage",
+        ],
       },
     },
+    gospelMethods: [
+      {
+        navTitle: "The Four",
+        navDesc: "A short modern gospel booklet from Cru",
+        body: [
+          "A modern take on the classic “Four Spiritual Laws” from Cru: a short booklet (and an app of the same name) that walks someone through the gospel in 5–10 minutes.",
+          "The four points: 1) God loves you and wants you to know Him. 2) People are sinful and separated from God, so they can't know Him fully on their own. 3) Jesus Christ is God's only solution to the problem of sin. 4) We receive forgiveness and eternal life by personally trusting Jesus Christ as Savior and Lord.",
+          "Works best when you have the booklet or the app handy and the person has time to go through the whole thing step by step.",
+        ],
+      },
+      {
+        navTitle: "Roman Road",
+        navDesc: "A path through verses in Romans",
+        body: [
+          "A sequence of verses from the book of Romans that trace the path from sin to salvation in order — no booklet needed, just a Bible (or a Bible app).",
+          "Classic sequence: Romans 3:23 (all have sinned) → Romans 6:23 (the wages of sin is death, but the gift of God is eternal life) → Romans 5:8 (Christ died for us while we were still sinners) → Romans 10:9 (if you confess with your mouth and believe in your heart, you will be saved) → Romans 10:13 (everyone who calls on the name of the Lord will be saved).",
+          "Works well one-on-one, especially if the other person already has a Bible or a Bible app open.",
+        ],
+      },
+      {
+        navTitle: "The 3 Circles",
+        navDesc: "A simple diagram of three overlapping circles",
+        body: [
+          "A very visual method: you draw three circles right on a napkin, in a notebook, or in the sand — God designed the world good (“Design”), people broke it through sin (“Brokenness”), and through the gospel God offers a way back (“Gospel”) that leads to life in “Restoration.”",
+          "Great for when you don't have a booklet or a Bible handy — just a pen and paper, and the drawing itself naturally keeps the other person's attention.",
+        ],
+      },
+      {
+        navTitle: "Bridge to Life",
+        navDesc: "An illustration of a gap and a cross-shaped bridge",
+        body: [
+          "A classic illustration from the Navigators and Cru: two cliffs separated by the gap of sin — a person on one side, God on the other. No effort of our own (good works, religion, morality) can bridge that gap.",
+          "The only bridge is the cross of Jesus Christ: His death and resurrection connect us to God. It's drawn as a simple sketch you can sketch out as you talk.",
+        ],
+      },
+    ],
     connectLabel: "After Hook",
     connectTitle: "Connect — loading the fish into the boats",
     connectText: "Every new believer needs to be connected to a Focus Group and a local church where they can grow in faith. The Youth Council coordinates Connect at its monthly meetings until every step is complete.",
@@ -738,6 +846,9 @@ ro: {
     teamRunsLabel: "Condusă de", noteLabel: "Important",
     teamStepsTitle: "Cum organizezi echipa",
     hookTipsTitle: "Cum desfășori Săptămâna Hook",
+    speakerTopicsTitle: "Exemple de teme pentru vorbitor",
+    meetingIdeasTitle: "Cum ar putea arăta",
+    gospelMethodsTitle: "Variante de a împărtăși Evanghelia",
     weeks: {
       focus: {
         num: "Săptămâna 1", name: "FOCUS", team: "Echipa Pray",
@@ -757,6 +868,14 @@ ro: {
           { l: "E", t: "Encourage", d: "Participanții împărtășesc ce i-a învățat Dumnezeu la biserică, în studiul Scripturii sau în rugăciunea personală." },
         ],
         note: "Grupuri de 3–4 persoane (maximum 6–8), de preferință de același gen. Tot ce se împărtășește într-o grupă Focus rămâne confidențial.",
+        speakerTopics: [
+          "Cum să-ți administrezi finanțele personale",
+          "Cum mi-a schimbat Dumnezeu viața",
+          "Cum să construiești o familie puternică",
+          "Relații",
+          "Cum să fii creștin la școală, la muncă și la antrenamente",
+          "Dumnezeu și sportul",
+        ],
         teamSteps: [
           "Desemnați doi lideri-adolescenți din Consiliul de tineret drept co-căpitani ai Echipei Pray.",
           "Decideți cum va sluji echipa: să se roage înainte sau în timpul întâlnirilor, să pregătească un spațiu pentru închinare și rugăciune, să adune cererile de rugăciune ale grupului.",
@@ -830,8 +949,51 @@ ro: {
           "Lăsați mereu timp pentru cardurile de răspuns la final — nu lăsați vorbitorul să depășească timpul alocat.",
           "Adunați toate cardurile când tinerii pleacă și predați aceeași zi contactul celui care a invitat acea persoană, ca procesul Connect să înceapă imediat.",
         ],
+        meetingIdeas: [
+          "O seară de film urmată de discuții",
+          "O seară de jocuri de societate",
+          "Un joc de Mafia",
+          "O ieșire în natură",
+          "O vizită de voluntariat la un orfelinat",
+        ],
       },
     },
+    gospelMethods: [
+      {
+        navTitle: "The Four",
+        navDesc: "Un scurt buclet modern despre Evanghelie, de la Cru",
+        body: [
+          "O variantă modernă a clasicelor „Patru legi spirituale” de la Cru: un scurt buclet (și o aplicație cu același nume) care parcurge Evanghelia în 5–10 minute.",
+          "Cele patru puncte: 1) Dumnezeu te iubește și vrea să-L cunoști. 2) Oamenii sunt păcătoși și separați de Dumnezeu, așa că nu-L pot cunoaște pe deplin prin forțe proprii. 3) Isus Hristos este singura soluție a lui Dumnezeu pentru problema păcatului. 4) Primim iertare și viață veșnică atunci când Îl primim personal pe Isus Hristos ca Mântuitor și Domn.",
+          "Funcționează cel mai bine când ai buclet-ul sau aplicația la îndemână, iar persoana are timp să parcurgă totul pas cu pas.",
+        ],
+      },
+      {
+        navTitle: "Drumul roman",
+        navDesc: "Un traseu prin versete din Epistola către Romani",
+        body: [
+          "O succesiune de versete din Epistola către Romani care arată, în ordine, drumul de la păcat la mântuire — fără buclet, doar cu o Biblie (sau o aplicație biblică) la îndemână.",
+          "Succesiunea clasică: Romani 3:23 (toți au păcătuit) → Romani 6:23 (plata păcatului este moartea, dar darul lui Dumnezeu este viața veșnică) → Romani 5:8 (Hristos a murit pentru noi când încă eram păcătoși) → Romani 10:9 (dacă mărturisești cu gura ta și crezi în inima ta, vei fi mântuit) → Romani 10:13 (oricine va chema Numele Domnului va fi mântuit).",
+          "Funcționează bine unu-la-unu, mai ales dacă persoana are deja o Biblie sau o aplicație biblică deschisă.",
+        ],
+      },
+      {
+        navTitle: "3 cercuri",
+        navDesc: "O schemă simplă din trei cercuri suprapuse",
+        body: [
+          "O metodă foarte vizuală: desenezi trei cercuri chiar pe un șervețel, într-un carnet sau cu degetul în nisip — Dumnezeu a creat lumea bună („Planul”), oamenii au stricat-o prin păcat („Căderea”), iar prin Evanghelie Dumnezeu oferă o cale de întoarcere („Evanghelia”) care duce la viață, în „Restaurare”.",
+          "Ideal atunci când nu ai la îndemână niciun buclet sau Biblie — e nevoie doar de un stilou și o hârtie, iar desenul în sine ține atenția celuilalt.",
+        ],
+      },
+      {
+        navTitle: "Podul spre viață",
+        navDesc: "O ilustrație cu o prăpastie și o cruce-pod",
+        body: [
+          "O ilustrație clasică de la Navigators și Cru: două maluri despărțite de prăpastia păcatului — omul pe o parte, Dumnezeu pe cealaltă. Niciun efort propriu (fapte bune, religie, moralitate) nu poate construi un pod peste prăpastie.",
+          "Singurul pod este crucea lui Isus Hristos: moartea și învierea Lui ne leagă de Dumnezeu. Se desenează simplu, chiar în timp ce vorbești cu cineva.",
+        ],
+      },
+    ],
     connectLabel: "După Hook",
     connectTitle: "Connect — încărcăm peștele în bărci",
     connectText: "Fiecare nou credincios trebuie conectat la o grupă Focus și la o biserică locală unde poate crește în credință. Consiliul de tineret coordonează procesul Connect la întâlnirile sale lunare, până la finalizarea tuturor pașilor.",
@@ -1072,6 +1234,9 @@ uk: {
     teamRunsLabel: "Веде", noteLabel: "Важливо",
     teamStepsTitle: "Як організувати команду",
     hookTipsTitle: "Як провести тиждень Hook",
+    speakerTopicsTitle: "Приклади тем для спікера",
+    meetingIdeasTitle: "Як це може виглядати",
+    gospelMethodsTitle: "Варіанти, як поділитися Євангелієм",
     weeks: {
       focus: {
         num: "Тиждень 1", name: "FOCUS", team: "Команда Pray",
@@ -1091,6 +1256,14 @@ uk: {
           { l: "E", t: "Encourage", d: "Учасники діляться тим, чого Бог навчив їх у церкві, під час вивчення Писання або особистої молитви." },
         ],
         note: "Група — 3–4 особи (максимум 6–8), бажано однієї статі. Усе, чим діляться у Focus-групі, залишається конфіденційним.",
+        speakerTopics: [
+          "Як вести облік особистих фінансів",
+          "Як Бог змінив моє життя",
+          "Як побудувати міцну сім'ю",
+          "Стосунки",
+          "Як бути християнином у школі, на роботі та на тренуваннях",
+          "Бог і спорт",
+        ],
         teamSteps: [
           "Призначте двох лідерів-підлітків із Молодіжної ради ко-капітанами команди Pray.",
           "Вирішіть, як команда служитиме: молитися до або під час зустрічей, підготувати простір для поклоніння й молитви, збирати молитовні потреби групи.",
@@ -1164,8 +1337,51 @@ uk: {
           "Обов'язково залиште час для карток «Відповідь» наприкінці — не дайте спікеру говорити занадто довго.",
           "Зберіть усі картки, коли молодь розходиться, і того ж дня передайте контакти тому, хто запросив цю людину, — щоб одразу розпочати Connect.",
         ],
+        meetingIdeas: [
+          "Спільний перегляд фільму з обговоренням після",
+          "Вечір настільних ігор",
+          "Гра в «Мафію»",
+          "Виїзд на природу",
+          "Волонтерська поїздка в дитячий будинок",
+        ],
       },
     },
+    gospelMethods: [
+      {
+        navTitle: "The Four",
+        navDesc: "Короткий сучасний буклет від Cru",
+        body: [
+          "Сучасна версія класичних «Чотирьох духовних законів» від організації Cru: короткий буклет (і однойменний застосунок), які проводять через Євангеліє за 5–10 хвилин.",
+          "Чотири пункти: 1) Бог любить тебе і хоче, щоб ти пізнав Його. 2) Люди грішні та відокремлені від Бога, тому не можуть пізнати Його повністю власними силами. 3) Ісус Христос — єдине Боже рішення проблеми гріха. 4) Ми отримуємо прощення і вічне життя, коли особисто приймаємо Ісуса Христа як Спасителя і Господа.",
+          "Добре працює, коли буклет чи застосунок під рукою, а людина має час пройти весь шлях крок за кроком.",
+        ],
+      },
+      {
+        navTitle: "Римська дорога",
+        navDesc: "Шлях через вірші з Послання до Римлян",
+        body: [
+          "Послідовність віршів з Послання до Римлян, які по порядку показують шлях від гріха до спасіння — без буклета, лише з Біблією (або її електронною версією) в руках.",
+          "Класична послідовність: Римлян 3:23 (усі згрішили) → Римлян 6:23 (плата за гріх — смерть, а дар Божий — вічне життя) → Римлян 5:8 (Христос помер за нас, коли ми були ще грішниками) → Римлян 10:9 (якщо устами визнаєш і серцем віриш — спасешся) → Римлян 10:13 (кожен, хто призве ім'я Господнє, спасеться).",
+          "Добре працює сам на сам, особливо якщо у співрозмовника вже є Біблія під рукою або відкритий застосунок з нею.",
+        ],
+      },
+      {
+        navTitle: "3 кола",
+        navDesc: "Наочна схема із трьох кіл, що перетинаються",
+        body: [
+          "Дуже візуальний метод: малюєш три кола прямо на серветці, в блокноті або пальцем на піску — Бог задумав світ добрим («Задум»), людство зруйнувало його гріхом («Гріхопадіння»), і через Євангеліє Бог пропонує шлях назад («Євангеліє»), що веде до життя у «Відновленні».",
+          "Зручний, коли під рукою немає ні буклета, ні Біблії — досить ручки й аркуша паперу, а саме малювання утримує увагу співрозмовника.",
+        ],
+      },
+      {
+        navTitle: "Міст до життя",
+        navDesc: "Ілюстрація з прірвою і хрестом-мостом",
+        body: [
+          "Класична ілюстрація від Navigators і Cru: два береги, розділені прірвою гріха, — людина на одному березі, Бог на іншому. Жодні власні зусилля (добрі справи, релігія, мораль) не можуть перекинути міст через прірву.",
+          "Єдиний міст — хрест Ісуса Христа: Його смерть і воскресіння з'єднують людину з Богом. Зображується простим малюнком, який зручно малювати просто під час розмови.",
+        ],
+      },
+    ],
     connectLabel: "Після Hook",
     connectTitle: "Connect — вантажимо рибу в човни",
     connectText: "Кожен новонавернений має бути пов'язаний із Focus-групою та помісною церквою, де зможе зростати у вірі. Молодіжна рада координує Connect на щомісячних зустрічах, доки не пройдено всі кроки.",

@@ -499,6 +499,20 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
   object-position: 50% 68%;
   filter: grayscale(1) contrast(0.95) brightness(1.05);
 }
+/* hero-team.jpg is a group photo shot close, with everyone's faces in the
+   top third of the frame -- the shared 68%-down crop (tuned for the other
+   hero photos, where the interesting part sits lower) was cutting every
+   face off and leaving just torsos and legs. Bias this one back toward
+   the top instead. */
+.hero.hero-team img { object-position: 50% 15%; }
+/* hero-hook.jpg used to be two unrelated photos pasted into one wide
+   canvas (a leftover mistake from an earlier crop) -- on a narrow phone
+   the default 68%-down crop only ever showed a slice of the left photo,
+   but on a wider viewport (tablet-width Telegram clients) enough of the
+   canvas became visible to reveal both photos side by side. The file now
+   holds a single group photo with faces in the top third, same as
+   hero-team.jpg, so it gets the same top-biased crop. */
+.hero.hero-hook img { object-position: 50% 15%; }
 .hero::after {
   content: "";
   position: absolute; inset: 0;

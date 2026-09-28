@@ -310,6 +310,28 @@ function accordionItem({ title, text }) {
       </div>
     </div>`;
 }
+// Same collapsed-by-default accordion shell as accordionItem, but for a
+// short numbered list of ideas/examples instead of one paragraph -- used
+// for the Hook meeting-format ideas and the Focus speaker-topic examples,
+// so both stay out of the way until someone actually wants them (see the
+// "Много места занимает" feedback that also prompted the coordinator-
+// invite card merge below).
+function accordionListItem({ title, items }) {
+  return `
+    <div class="accordion-item">
+      <button class="accordion-head tg-press">
+        <h4>${esc(title)}</h4>
+        ${ICONS.chevronRight}
+      </button>
+      <div class="accordion-panel">
+        <div class="accordion-panel-inner">
+          ${items.map((s, i) => `
+            <div class="list-row"><div class="list-row-num">${i + 1}</div><div class="list-row-body"><p>${esc(s)}</p></div></div>
+          `).join("")}
+        </div>
+      </div>
+    </div>`;
+}
 function wireAccordions(root) {
   root.querySelectorAll(".accordion-item").forEach((item) => {
     const head = item.querySelector(".accordion-head");
@@ -453,7 +475,7 @@ const WEEK_DAYS = { focus: "1–7", inspire: "8–14", share: "15–21", hook: "
 function renderFish() {
   const d = t().fish;
   el.pages.fish.innerHTML = `
-    <div class="hero fade-in">
+    <div class="hero hero-hook fade-in">
       <img src="assets/img/hero-hook.jpg" alt="" />
       <div class="hero-inner">
         <span class="hero-ribbon">${esc(d.heroRibbon)}</span>
@@ -566,7 +588,11 @@ function renderWeekSheetContent(wk) {
             <p><b>${esc(h.t)}</b> — ${esc(h.d)}</p>
           </div>
         `).join("")}
-      </div>`;
+      </div>
+      ${w.speakerTopics && w.speakerTopics.length ? `
+      <div class="card accordion" style="padding:0 var(--space-4);margin-top:16px">
+        ${accordionListItem({ title: d.speakerTopicsTitle, items: w.speakerTopics })}
+      </div>` : ""}`;
   } else if (wk === "inspire") {
     extra = `
       <h3 style="font-size:16px;margin:20px 0 8px">${esc(w.hopeTitle)}</h3>
@@ -583,6 +609,7 @@ function renderWeekSheetContent(wk) {
         ${ICONS.chevronRight}
       </button>`;
   } else if (wk === "hook") {
+    const gospelMethods = d.gospelMethods || [];
     extra = `
       <div class="myfive-mini">
         <p>${esc(t().five.heroSub)}</p>
@@ -593,6 +620,21 @@ function renderWeekSheetContent(wk) {
       <div class="card">
         ${w.hookTips.map((s, i) => `
           <div class="list-row"><div class="list-row-num">${i + 1}</div><div class="list-row-body"><p>${esc(s)}</p></div></div>
+        `).join("")}
+      </div>` : ""}
+      ${w.meetingIdeas && w.meetingIdeas.length ? `
+      <div class="card accordion" style="padding:0 var(--space-4);margin-top:16px">
+        ${accordionListItem({ title: d.meetingIdeasTitle, items: w.meetingIdeas })}
+      </div>` : ""}
+      ${gospelMethods.length ? `
+      <h3 style="font-size:16px;margin:20px 0 8px">${esc(d.gospelMethodsTitle)}</h3>
+      <div class="card" style="padding:0 var(--space-4)">
+        ${gospelMethods.map((m, i) => `
+          <button class="nav-row tg-press" data-gospel-method="${i}">
+            <div class="nav-row-icon">${[ICONS.book, ICONS.arrowUpRight, ICONS.target, ICONS.handshake][i] || ICONS.book}</div>
+            <div class="nav-row-body"><h4>${esc(m.navTitle)}</h4><p>${esc(m.navDesc)}</p></div>
+            ${ICONS.chevronRight}
+          </button>
         `).join("")}
       </div>` : ""}`;
   }
@@ -623,6 +665,26 @@ function renderWeekSheetContent(wk) {
   if (testimonyBtn) testimonyBtn.addEventListener("click", openTestimonySheet);
   const fiveBtn = document.getElementById("openFiveFromHook");
   if (fiveBtn) fiveBtn.addEventListener("click", () => { goBack(); switchTab("five"); });
+  // Gospel-method tiles live inside the Hook sheet, but each one pushes a
+  // full stack page (#stackRoot, z-index 60) -- which sits BEHIND the open
+  // sheet (z-index 90/91), so the sheet has to close first or the pushed
+  // page would render invisibly underneath it.
+  el.sheetBody.querySelectorAll("[data-gospel-method]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const i = btn.dataset.gospelMethod;
+      // Wait for the sheet's own popstate-driven close (see handlePopState)
+      // before pushing the new page -- pushPage() calls history.pushState()
+      // itself, and firing that in the same tick as history.back() (before
+      // the sheet's pop actually lands) is a race the nav-stack comment up
+      // top warns against.
+      window.addEventListener("popstate", function onSheetClosed() {
+        window.removeEventListener("popstate", onSheetClosed);
+        pushPage(`fish-gospel-${i}`);
+      }, { once: true });
+      goBack();
+    });
+  });
+  wireAccordions(el.sheetBody);
   window.wireUpPressFeedback(el.sheetBody);
 }
 
@@ -692,6 +754,23 @@ function registerFishSubpages() {
       </div>`;
     wireAccordions(body);
   });
+
+  // "Ways to share the gospel" -- four short, self-contained pages (one
+  // per method), pushed from a set of nav tiles on the Hook week sheet.
+  // Each page is just a title plus a few paragraphs, so a plain "section"
+  // with no accordion/list machinery is all it needs.
+  const GOSPEL_ICONS = [ICONS.book, ICONS.arrowUpRight, ICONS.target, ICONS.handshake];
+  (t().fish.gospelMethods || []).forEach((_, i) => {
+    registerStackPage(`fish-gospel-${i}`, () => (t().fish.gospelMethods[i] || {}).navTitle || "", (body) => {
+      const m = t().fish.gospelMethods[i];
+      if (!m) { body.innerHTML = ""; return; }
+      body.innerHTML = `
+        <div class="section" style="padding-top:var(--space-4)">
+          <div class="pillar-icon" style="margin-bottom:var(--space-3)">${GOSPEL_ICONS[i] || ICONS.book}</div>
+          ${m.body.map(p => `<p class="section-text" style="margin-bottom:12px">${esc(p)}</p>`).join("")}
+        </div>`;
+    });
+  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -701,7 +780,7 @@ function registerFishSubpages() {
 function renderTeam() {
   const d = t().team;
   el.pages.team.innerHTML = `
-    <div class="hero fade-in">
+    <div class="hero hero-team fade-in">
       <img src="assets/img/hero-team.jpg" alt="" />
       <div class="hero-inner">
         <span class="hero-ribbon">${esc(d.heroRibbon)}</span>
@@ -942,27 +1021,39 @@ function renderAdminTools(me, d) {
     ? `<input type="hidden" id="coordCountryInput" value="${esc(me.country || "")}" />
        <p class="section-text" style="margin:0 0 8px">${esc(d.countryLabel)}: <b>${esc(me.country || "")}</b></p>`
     : `<input type="text" id="coordCountryInput" class="field-input" placeholder="${esc(d.countryPlaceholder)}" />`;
-  const coordInviteBlock = (isAdmin || isNational) ? `
+
+  // Admin is the only role that can invite BOTH a coordinator and a
+  // national coordinator, and used to get two nearly-identical full cards
+  // for it (title + country field + full-width button each) stacked one
+  // under the other -- a lot of vertical space for two actions that only
+  // differ in target role and endpoint. One compact card with a segmented
+  // toggle (same pill control as the language switcher) replaces both; a
+  // national_coordinator only ever has the one option, so they keep a
+  // single plain card with no toggle.
+  let inviteTeamBlock = "";
+  if (isAdmin) {
+    inviteTeamBlock = `
+    <div class="card" style="margin-top:var(--space-3)">
+      <h4 style="margin:0 0 8px">${esc(d.inviteCoordinatorTitle)}</h4>
+      <div class="lang-switch" id="inviteRoleSwitch" style="margin-bottom:10px">
+        <button type="button" class="lang-btn active" data-invite-role="coordinator">${esc(roleLabel("coordinator"))}</button>
+        <button type="button" class="lang-btn" data-invite-role="national_coordinator">${esc(roleLabel("national_coordinator"))}</button>
+      </div>
+      <div class="field-stack">
+        <input type="text" id="teamInviteCountry" class="field-input" placeholder="${esc(d.countryPlaceholder)}" />
+        <button id="teamInviteBtn" class="btn full tg-press" data-active-role="coordinator">${esc(d.inviteCoordinatorBtn)}</button>
+      </div>
+    </div>`;
+  } else if (isNational) {
+    inviteTeamBlock = `
     <div class="card" style="margin-top:var(--space-3)">
       <h4 style="margin:0 0 4px">${esc(d.inviteCoordinatorTitle)}</h4>
       <div class="field-stack">
         ${coordCountryField}
         <button id="coordInviteBtn" class="btn full tg-press">${esc(d.inviteCoordinatorBtn)}</button>
       </div>
-    </div>` : "";
-
-  // Deliberately admin-only, not delegable to a national_coordinator --
-  // keeping this one step to a small, human-vetted set of admins is the
-  // whole "shrink the blast radius" point of the role (see the backend's
-  // POST /api/invites/national-coordinator).
-  const ncInviteBlock = isAdmin ? `
-    <div class="card" style="margin-top:var(--space-3)">
-      <h4 style="margin:0 0 4px">${esc(d.inviteNationalCoordinatorTitle)}</h4>
-      <div class="field-stack">
-        <input type="text" id="ncCountryInput" class="field-input" placeholder="${esc(d.countryPlaceholder)}" />
-        <button id="ncInviteBtn" class="btn full tg-press">${esc(d.inviteNationalCoordinatorBtn)}</button>
-      </div>
-    </div>` : "";
+    </div>`;
+  }
 
   return `
     ${codeBlock}
@@ -971,8 +1062,7 @@ function renderAdminTools(me, d) {
       <h4 style="margin:0 0 8px">${esc(isNational ? d.groupsInCountryTitle : d.yourGroupsTitle)}</h4>
       <div id="groupsList">${groupsListHtml}</div>
     </div>
-    ${coordInviteBlock}
-    ${ncInviteBlock}
+    ${inviteTeamBlock}
     ${renderStatsBlock(me, d)}
   `;
 }
@@ -1264,14 +1354,33 @@ function wireAccountSection(root) {
     });
   }
 
-  const ncInviteBtn = root.querySelector("#ncInviteBtn");
-  if (ncInviteBtn) {
-    ncInviteBtn.addEventListener("click", async () => {
-      const country = root.querySelector("#ncCountryInput")?.value.trim();
+  // Admin's merged coordinator/national-coordinator card: the segmented
+  // toggle just swaps which role the shared button targets (and its
+  // label), so one handler on the button reads the currently-active role
+  // instead of two near-duplicate handlers on two separate buttons.
+  const roleSwitch = root.querySelector("#inviteRoleSwitch");
+  const teamInviteBtn = root.querySelector("#teamInviteBtn");
+  if (roleSwitch && teamInviteBtn) {
+    roleSwitch.querySelectorAll("[data-invite-role]").forEach((segBtn) => {
+      segBtn.addEventListener("click", () => {
+        const role = segBtn.dataset.inviteRole;
+        roleSwitch.querySelectorAll("[data-invite-role]").forEach((b) => b.classList.toggle("active", b === segBtn));
+        teamInviteBtn.dataset.activeRole = role;
+        teamInviteBtn.textContent = role === "national_coordinator" ? t().account.inviteNationalCoordinatorBtn : t().account.inviteCoordinatorBtn;
+        window.haptic.selection();
+      });
+    });
+  }
+  if (teamInviteBtn) {
+    teamInviteBtn.addEventListener("click", async () => {
+      const country = root.querySelector("#teamInviteCountry")?.value.trim();
       if (!country) return;
-      ncInviteBtn.disabled = true;
+      const role = teamInviteBtn.dataset.activeRole || "coordinator";
+      teamInviteBtn.disabled = true;
       try {
-        const res = await window.fpApi.inviteNationalCoordinator(country);
+        const res = role === "national_coordinator"
+          ? await window.fpApi.inviteNationalCoordinator(country)
+          : await window.fpApi.inviteCoordinator(country);
         state.lastCode = res.code;
         renderTeam();
         window.wireUpPressFeedback(el.pages.team);
@@ -1280,7 +1389,7 @@ function wireAccountSection(root) {
       } catch (err) {
         toast(t().account.errorNotice, ICONS.close);
         window.haptic.notification("error");
-        ncInviteBtn.disabled = false;
+        teamInviteBtn.disabled = false;
       }
     });
   }
