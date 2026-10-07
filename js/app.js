@@ -4,6 +4,18 @@
    sheets, "My 5" tracker.
    ========================================================================== */
 
+// Cache-buster for the hero-*.jpg files, separate from the ?v= on the
+// <script>/<link> tags in index.html. Those files never had one: swapping
+// a hero photo (or re-cropping it) changed the file at the SAME url, so a
+// browser or CDN that had already cached the old bytes at
+// "assets/img/hero-team.jpg" kept serving them indefinitely -- someone
+// could fix an image in the repo and users would still see the old, wrong
+// one with no way to tell the fix hadn't "worked". Bump ASSET_V whenever
+// any assets/img/hero-*.jpg file's CONTENT changes (not on every deploy --
+// only actual pixel changes need a new value).
+const ASSET_V = "20261002a";
+function heroSrc(file) { return `assets/img/${file}?v=${ASSET_V}`; }
+
 const state = {
   tab: "home",
   five: [],
@@ -372,8 +384,8 @@ function wireAccordions(root) {
 function renderHome() {
   const d = t().home;
   el.pages.home.innerHTML = `
-    <div class="hero fade-in">
-      <img src="assets/img/hero-focus.jpg" alt="" />
+    <div class="hero hero-home fade-in">
+      <img src="${heroSrc('hero-home.jpg')}" alt="" />
       <div class="hero-inner">
         <span class="hero-ribbon">${esc(d.heroRibbon)}</span>
         <h1 class="display hero-title"><span>${esc(d.heroTitle)}</span></h1>
@@ -405,8 +417,18 @@ function renderHome() {
         <cite>${esc(d.ctaText)}</cite>
       </div>
     </div>
+
+    <button class="faq-fab tg-press" id="homeFaqFab" aria-label="${esc(d.faqTitle)}" title="${esc(d.faqTitle)}">
+      ${ICONS.help}
+    </button>
   `;
   document.getElementById("homeCta").addEventListener("click", () => switchTab("fish"));
+  // Standalone floating button rather than another row buried in the
+  // "learn more" list -- FAQ is about using the app itself, not ministry
+  // content, so it gets its own always-visible entry point. position:fixed
+  // (not absolute), so it stays pinned to the viewport as the Home page
+  // scrolls underneath it, same mechanism as the bottom tab bar and #toast.
+  document.getElementById("homeFaqFab").addEventListener("click", () => pushPage("home-faq"));
   wirePushRows(el.pages.home);
   window.wireUpPressFeedback(el.pages.home);
   staggerIn(el.pages.home, ".nav-row");
@@ -469,6 +491,21 @@ function registerHomeSubpages() {
       </div>`;
     wireAccordions(body);
   });
+
+  // FAQ -- grounded in things people actually asked about the app itself
+  // (streak rules, cold-start wait, invite codes, prayer-request privacy),
+  // not just ministry content. Same accordion component as "About"/"Where
+  // we fish" above, just fed questions instead of topic titles.
+  registerStackPage("home-faq", () => t().home.faqTitle, (body) => {
+    const d = t().home;
+    body.innerHTML = `
+      <div class="section" style="padding-top:var(--space-4)">
+        <div class="card accordion" style="padding:0 var(--space-4)">
+          ${(d.faqItems || []).map((f) => accordionItem({ title: f.q, text: f.a })).join("")}
+        </div>
+      </div>`;
+    wireAccordions(body);
+  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -484,7 +521,7 @@ function renderFish() {
   const d = t().fish;
   el.pages.fish.innerHTML = `
     <div class="hero hero-hook fade-in">
-      <img src="assets/img/hero-hook.jpg" alt="" />
+      <img src="${heroSrc('hero-hook.jpg')}" alt="" />
       <div class="hero-inner">
         <span class="hero-ribbon">${esc(d.heroRibbon)}</span>
         <h1 class="display hero-title"><span>${esc(d.heroTitle)}</span></h1>
@@ -554,7 +591,7 @@ function renderWeekCard(wk, w, d) {
   <div class="week-card" data-week="${wk}">
     <div class="week-card-top">
       <div class="week-photo">
-        <img src="assets/img/${WEEK_PHOTO[wk]}" alt="" />
+        <img src="${heroSrc(WEEK_PHOTO[wk])}" alt="" />
         <div class="fish-badge">${ICONS.fish}</div>
       </div>
       <div class="week-card-head">
@@ -634,17 +671,40 @@ function renderWeekSheetContent(wk) {
       <div class="card accordion" style="padding:0 var(--space-4);margin-top:16px">
         ${accordionListItem({ title: d.meetingIdeasTitle, items: w.meetingIdeas })}
       </div>` : ""}
-      ${gospelMethods.length ? `
+      ${gospelMethods.length ? (() => {
+        // A first-time team running the whole 4-week cycle just needs ONE
+        // ready-to-use way to present the gospel here, not four equal
+        // options to compare before they've even tried one -- that reads as
+        // homework, not a next step. "The Four" (index 0) is the one
+        // self-contained, step-by-step method of the four (see its own
+        // navDesc/body), so it's featured in full right on this sheet; the
+        // other three stay one tap away for teams who want to explore once
+        // they've been through the cycle at least once.
+        const FEATURED = 0;
+        const featured = gospelMethods[FEATURED];
+        const rest = gospelMethods.map((m, i) => ({ m, i })).filter(({ i }) => i !== FEATURED);
+        const icons = [ICONS.book, ICONS.arrowUpRight, ICONS.target, ICONS.handshake];
+        return `
       <h3 style="font-size:16px;margin:20px 0 8px">${esc(d.gospelMethodsTitle)}</h3>
+      <button class="card tg-press" style="display:block;width:100%;text-align:left;padding:var(--space-4);border:none" data-gospel-method="${FEATURED}">
+        <span class="section-label">${esc(d.gospelFeaturedLabel)}</span>
+        <div style="display:flex;align-items:center;gap:var(--space-3);margin-top:8px">
+          <div class="nav-row-icon">${icons[FEATURED] || ICONS.book}</div>
+          <h4 style="margin:0">${esc(featured.navTitle)}</h4>
+        </div>
+        ${featured.body.map(p => `<p class="section-text" style="margin-top:10px">${esc(p)}</p>`).join("")}
+      </button>
+      <h4 style="font-size:13px;color:var(--tg-hint);margin:16px 0 8px">${esc(d.gospelMoreLabel)}</h4>
       <div class="card" style="padding:0 var(--space-4)">
-        ${gospelMethods.map((m, i) => `
+        ${rest.map(({ m, i }) => `
           <button class="nav-row tg-press" data-gospel-method="${i}">
-            <div class="nav-row-icon">${[ICONS.book, ICONS.arrowUpRight, ICONS.target, ICONS.handshake][i] || ICONS.book}</div>
+            <div class="nav-row-icon">${icons[i] || ICONS.book}</div>
             <div class="nav-row-body"><h4>${esc(m.navTitle)}</h4><p>${esc(m.navDesc)}</p></div>
             ${ICONS.chevronRight}
           </button>
         `).join("")}
-      </div>` : ""}`;
+      </div>`;
+      })() : ""}`;
   }
 
   const teamStepsBlock = (w.teamSteps && w.teamSteps.length) ? `
@@ -743,7 +803,15 @@ function registerFishSubpages() {
     const d = t().fish;
     body.innerHTML = `
       <div class="section" style="padding-top:var(--space-4)">
+        <div class="pillar-icon" style="margin-bottom:var(--space-3)">${ICONS.fish}</div>
         <p class="section-text">${esc(d.symbolText)}</p>
+        ${(d.symbolAcronym || []).length ? `
+          <div class="card" style="padding:var(--space-4);margin-top:var(--space-3)">
+            <h4 style="margin:0 0 var(--space-3);letter-spacing:.08em">${esc(d.symbolAcronymLabel || "")}</h4>
+            ${d.symbolAcronym.map((a) => `
+              <div class="list-row"><div class="list-row-num">${esc(a.letter)}</div><div class="list-row-body"><p>${esc(a.text)}</p></div></div>
+            `).join("")}
+          </div>` : ""}
       </div>`;
   });
 
@@ -755,6 +823,7 @@ function registerFishSubpages() {
     const d = t().fish;
     body.innerHTML = `
       <div class="section" style="padding-top:var(--space-4)">
+        <div class="pillar-icon" style="margin-bottom:var(--space-3)">${ICONS.handshake}</div>
         <p class="section-text">${esc(d.connectText)}</p>
         <div class="card accordion" style="padding:0 var(--space-4);margin-top:var(--space-3)">
           ${d.connectSteps.map((s, i) => accordionItem({ title: `${t().common.step} ${i + 1}`, text: s })).join("")}
@@ -789,7 +858,7 @@ function renderTeam() {
   const d = t().team;
   el.pages.team.innerHTML = `
     <div class="hero hero-team fade-in">
-      <img src="assets/img/hero-team.jpg" alt="" />
+      <img src="${heroSrc('hero-team.jpg')}" alt="" />
       <div class="hero-inner">
         <span class="hero-ribbon">${esc(d.heroRibbon)}</span>
         <h1 class="display hero-title"><span>${esc(d.heroTitle)}</span></h1>
@@ -1474,11 +1543,11 @@ function registerTeamSubpages() {
       <div class="section" style="padding-top:var(--space-4)">
         <div class="stack">
           <div class="card role-card">
-            <div class="role-photo"><img src="assets/img/hero-inspire.jpg" alt=""/></div>
+            <div class="role-photo"><img src="${heroSrc('hero-inspire.jpg')}" alt=""/></div>
             <div class="role-body"><h4>${esc(d.coachTitle)}</h4><p>${esc(d.coachText)}</p></div>
           </div>
           <div class="card role-card">
-            <div class="role-photo"><img src="assets/img/hero-team.jpg" alt=""/></div>
+            <div class="role-photo"><img src="${heroSrc('hero-team.jpg')}" alt=""/></div>
             <div class="role-body"><h4>${esc(d.councilTitle)}</h4><p>${esc(d.councilText)}</p></div>
           </div>
         </div>

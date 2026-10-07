@@ -88,6 +88,12 @@
     prayForNeed: (id) => apiFetch("/api/prayer-needs/" + encodeURIComponent(id) + "/pray", { method: "POST" }),
     getMyPrayerNeeds: () => apiFetch("/api/prayer-needs/mine"),
     deletePrayerNeed: (id) => apiFetch("/api/prayer-needs/" + encodeURIComponent(id), { method: "DELETE" }),
-    getLatestEncouragement: () => apiFetch("/api/encouragements/latest"),
+    // CURRENT_LANG comes from i18n.js, loaded before this file (see
+    // index.html's script order) -- both are plain global scripts, so it's
+    // just a global variable read here, not an import. Passing it lets the
+    // server return this post's caption in the viewer's own interface
+    // language instead of always the original-language text it was authored
+    // in (see routes/encouragements.js's resolveCaption on the backend).
+    getLatestEncouragement: () => apiFetch("/api/encouragements/latest?lang=" + encodeURIComponent(CURRENT_LANG)),
   };
 })();

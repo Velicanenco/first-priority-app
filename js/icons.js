@@ -71,6 +71,7 @@ const ICONS = {
   handshake: `<svg viewBox="0 0 24 24" fill="none"><path d="M2 11l4-3 4 2 3-2 3 1.5L20 7l2 3-4.5 5-3-1.5-3 2-4-2-3 1.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   arrowUpRight: `<svg viewBox="0 0 24 24" fill="none"><path d="M7 17 17 7M9 7h8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   shuffle: `<svg viewBox="0 0 24 24" fill="none"><path d="M3 6h3.5c1.6 0 2.5.7 3.4 2l5.2 8c.9 1.3 1.8 2 3.4 2H21M3 18h3.5c1.6 0 2.5-.7 3.4-2l.6-.9M14.4 8.9l.7-1c.9-1.3 1.8-2 3.4-2H21" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M18.5 3.5 21 6l-2.5 2.5M18.5 15.5 21 18l-2.5 2.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  help: `<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M9.2 9.3a2.8 2.8 0 0 1 5.4.9c0 1.8-2.6 2-2.6 3.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg>`,
 };
 
 // Helper: attach a fill/stroke color context via a wrapping span (used inline in templates).

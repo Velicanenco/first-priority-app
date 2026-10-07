@@ -39,6 +39,19 @@ ru: {
       { title: "Партнёрство", text: "Партнёры и сторонники, дающие служению стабильность и развитие." },
     ],
     whereLabel: "Где мы ловим", whereTitle: "Церкви, клубы и школы",
+    faqLabel: "Частые вопросы", faqTitle: "FAQ",
+    faqItems: [
+      { q: "Что такое цикл FISH?", a: "Повторяющаяся четырёхнедельная стратегия: Focus (сосредоточить команду), Inspire (вдохновить через гостя), Share (поделиться личным свидетельством), Hook (представить Евангелие и предложить откликнуться). Подробности — во вкладке FISH." },
+      { q: "Как присоединиться к своей команде в приложении?", a: "По коду приглашения от лидера, координатора или администратора вашей группы — откройте бота First Priority ещё раз по ссылке с кодом. Нет кода — попросите того, кто вас пригласил." },
+      { q: "Как пригласить нового лидера или координатора?", a: "Во вкладке «Команда» администратор или координатор может создать группу и сгенерировать код для лидера/координатора — отправьте этот код человеку в Telegram." },
+      { q: "Как работает серия (streak) в «Моих 5»?", a: "Серия растёт, когда вы отмечаете молитву в «Моих 5» хотя бы раз в течение дня — каждый новый день без пропуска добавляет +1. Если за день не помолиться ни разу, при следующей молитве серия сбросится до 1." },
+      { q: "Я помолился(ась), а серия не выросла — почему?", a: "Серия считается по календарным дням (UTC), а не по 24-часовому таймеру с момента последней молитвы. Если вы молитесь поздно ночью, иногда это засчитывается на «вчера» — попробуйте на следующий день." },
+      { q: "Приложение долго грузится при первом открытии — это баг?", a: "Нет. Сервер работает на бесплатном тарифе хостинга и «засыпает» примерно через 15 минут без использования. Первое открытие после паузы может занять до минуты — это нормально, просто подождите." },
+      { q: "Безопасно ли писать личные просьбы молитвы в приложении?", a: "Просьбы молитвы видят только участники вашей группы и без подписи имени в списке — но избегайте публиковать чувствительные детали (адреса, конкретные обстоятельства, которые могут кому-то навредить), особенно если вы в регионе, где христианство преследуется." },
+      { q: "Как поменять язык интерфейса?", a: "Переключатель RU / EN / RO / UA — в верхней части каждого экрана." },
+      { q: "Что такое Connect и зачем это после недели Hook?", a: "Connect — шаг, на котором каждого, кто решил следовать за Христом, нужно связать с Focus-группой и поместной церковью, чтобы он не остался один со своей новой верой. Подробности — во вкладке FISH → Connect." },
+      { q: "Я администратор или координатор — где смотреть статистику по моим группам?", a: "Во вкладке «Команда», в разделе «Статистика» — там видно число участников и активность групп, которые вам подчиняются." },
+    ],
     where: [
       { title: "Церкви", text: "Проверенная модель, которая помогает церквям вырастить из подростков лидеров, а не просто слушателей." },
       { title: "Поместные клубы", text: "Встречи в общественных центрах, домах и дворах — там, где школы не разрешают христианские мероприятия." },
@@ -55,6 +68,14 @@ ru: {
     symbolLabel: "Почему рыба",
     symbolTitle: "Ихтис — знак ловцов людей",
     symbolText: "Символ ихтис (греч. «рыба») выбрали первые христиане, отождествлявшие себя со словами Иисуса: «Идите за Мной, и Я сделаю вас ловцами людей». Слово также читалось как акроним «Иисус Христос, Сын Божий, Спаситель» и служило тайным знаком во времена гонений.",
+    symbolAcronymLabel: "Что означает каждая буква",
+    symbolAcronym: [
+      { letter: "Ι", text: "Иисус (Ἰησοῦς)" },
+      { letter: "Χ", text: "Христос (Χριστός)" },
+      { letter: "Θ", text: "Божий (Θεοῦ)" },
+      { letter: "Υ", text: "Сын (Υἱός)" },
+      { letter: "Σ", text: "Спаситель (Σωτήρ)" },
+    ],
     acronymTitle: "F.I.S.H. — четыре цели служения",
     acronym: [
       { l: "F", w: "Focus", t: "Сосредоточить" },
@@ -73,6 +94,8 @@ ru: {
     speakerTopicsTitle: "Примеры тем для спикера",
     meetingIdeasTitle: "Как это может выглядеть",
     gospelMethodsTitle: "Варианты, как поделиться Евангелием",
+    gospelFeaturedLabel: "Готовый пример — используйте сразу",
+    gospelMoreLabel: "Другие варианты (на будущее)",
     weeks: {
       focus: {
         num: "Неделя 1", name: "FOCUS", team: "Команда Pray",
@@ -456,6 +479,19 @@ en: {
       { title: "Partnership", text: "Partners and supporters giving the ministry stability and growth." },
     ],
     whereLabel: "Where we fish", whereTitle: "Churches, clubs and schools",
+    faqLabel: "Frequently asked questions", faqTitle: "FAQ",
+    faqItems: [
+      { q: "What is the FISH cycle?", a: "A repeating four-week strategy: Focus (get the team aligned), Inspire (a guest speaker encourages everyone), Share (peer testimonies), Hook (present the gospel and invite a response). See the FISH tab for details." },
+      { q: "How do I join my team in the app?", a: "You join with an invite code from your group's leader, coordinator or admin — open the First Priority bot again through the link that carries the code. No code? Ask whoever invited you." },
+      { q: "How do I invite a new leader or coordinator?", a: "On the Team tab, an admin or coordinator can create a group and generate a leader/coordinator code — send that code to the person on Telegram." },
+      { q: "How does the \"My 5\" streak work?", a: "The streak grows when you mark a prayer in \"My 5\" at least once during the day — each new day without a gap adds +1. If you skip a whole day, it resets to 1 on your next prayer." },
+      { q: "I prayed, but my streak didn't go up — why?", a: "The streak counts by calendar day (UTC), not a 24-hour timer from your last prayer. If you pray late at night, it sometimes still counts as \"yesterday\" — try again the next day." },
+      { q: "The app takes a long time to load the first time — is that a bug?", a: "No — the server runs on a free hosting tier and falls asleep after about 15 minutes of no use. The first open after a pause can take up to a minute; that's expected, just wait it out." },
+      { q: "Is it safe to post personal prayer requests in the app?", a: "Prayer requests are only visible to your own group and aren't shown with a name in the list — but avoid posting sensitive details (addresses, specific circumstances that could put someone at risk), especially if you're in a region where being a Christian carries real risk." },
+      { q: "How do I change the interface language?", a: "The RU / EN / RO / UA switcher is at the top of every screen." },
+      { q: "What is Connect, and why does it come after the Hook week?", a: "Connect is the step where everyone who decided to follow Christ gets linked to a Focus Group and a local church, so they're not left alone with their new faith. See FISH → Connect for details." },
+      { q: "I'm an admin or coordinator — where do I see stats for my groups?", a: "On the Team tab, under \"Statistics\" — it shows member counts and activity for the groups under you." },
+    ],
     where: [
       { title: "Churches", text: "A proven model that helps churches grow teenagers into leaders, not just listeners." },
       { title: "Community clubs", text: "Meetings in community centers, homes and yards — wherever schools don't allow Christian activities." },
@@ -472,6 +508,14 @@ en: {
     symbolLabel: "Why a fish",
     symbolTitle: "Ichthys — the mark of fishers of men",
     symbolText: "The ichthys symbol (Greek for “fish”) was chosen by the early Christians, who identified with Jesus' words: “Follow Me, and I will make you fishers of men.” The word also worked as an acronym — “Jesus Christ, Son of God, Savior” — and served as a secret sign during times of persecution.",
+    symbolAcronymLabel: "What each letter stands for",
+    symbolAcronym: [
+      { letter: "Ι", text: "Jesus (Iēsous)" },
+      { letter: "Χ", text: "Christ (Christos)" },
+      { letter: "Θ", text: "God's (Theou)" },
+      { letter: "Υ", text: "Son (Huios)" },
+      { letter: "Σ", text: "Savior (Sōtēr)" },
+    ],
     acronymTitle: "F.I.S.H. — four ministry goals",
     acronym: [
       { l: "F", w: "Focus", t: "Focus" },
@@ -490,6 +534,8 @@ en: {
     speakerTopicsTitle: "Example speaker topics",
     meetingIdeasTitle: "What this could look like",
     gospelMethodsTitle: "Ways to share the gospel",
+    gospelFeaturedLabel: "Ready-to-use example — start here",
+    gospelMoreLabel: "Other ways (explore later)",
     weeks: {
       focus: {
         num: "Week 1", name: "FOCUS", team: "Pray Team",
@@ -873,6 +919,19 @@ ro: {
       { title: "Parteneriat", text: "Parteneri și susținători care asigură stabilitate și dezvoltare slujirii." },
     ],
     whereLabel: "Unde pescuim", whereTitle: "Biserici, cluburi și școli",
+    faqLabel: "Întrebări frecvente", faqTitle: "FAQ",
+    faqItems: [
+      { q: "Ce este ciclul FISH?", a: "O strategie repetitivă de patru săptămâni: Focus (aliniază echipa), Inspire (un vorbitor invitat încurajează pe toată lumea), Share (mărturii între colegi), Hook (prezintă Evanghelia și invită la un răspuns). Detalii în tab-ul FISH." },
+      { q: "Cum mă alătur echipei mele în aplicație?", a: "Te alături cu un cod de invitație de la liderul, coordonatorul sau administratorul grupului tău — deschide din nou botul First Priority prin linkul cu codul. Nu ai un cod? Cere-l celui care te-a invitat." },
+      { q: "Cum invit un nou lider sau coordonator?", a: "În tab-ul Echipă, un administrator sau coordonator poate crea un grup și genera un cod de lider/coordonator — trimite acel cod persoanei pe Telegram." },
+      { q: "Cum funcționează seria din „Cele 5 ale mele”?", a: "Seria crește atunci când marchezi o rugăciune în „Cele 5 ale mele” cel puțin o dată pe zi — fiecare zi nouă fără pauză adaugă +1. Dacă sari o zi întreagă, seria revine la 1 la următoarea rugăciune." },
+      { q: "M-am rugat, dar seria nu a crescut — de ce?", a: "Seria se numără pe zi calendaristică (UTC), nu printr-un cronometru de 24 de ore de la ultima rugăciune. Dacă te rogi târziu noaptea, uneori se contorizează tot ca „ieri” — încearcă din nou a doua zi." },
+      { q: "Aplicația se încarcă mult timp la prima deschidere — e un bug?", a: "Nu — serverul rulează pe un plan de găzduire gratuit și „adoarme” după aproximativ 15 minute de inactivitate. Prima deschidere după o pauză poate dura până la un minut; e normal, așteaptă puțin." },
+      { q: "Este sigur să postez cereri de rugăciune personale în aplicație?", a: "Cererile de rugăciune sunt vizibile doar grupului tău și nu apar cu numele în listă — dar evită să postezi detalii personale sensibile (adrese, circumstanțe specifice care ar putea pune pe cineva în pericol), mai ales dacă ești într-o regiune unde a fi creștin presupune riscuri reale." },
+      { q: "Cum schimb limba interfeței?", a: "Comutatorul RU / EN / RO / UA este în partea de sus a fiecărui ecran." },
+      { q: "Ce este Connect și de ce vine după săptămâna Hook?", a: "Connect este pasul în care fiecare persoană care a decis să-L urmeze pe Hristos este conectată la o grupă Focus și la o biserică locală, ca să nu rămână singură cu noua ei credință. Detalii la FISH → Connect." },
+      { q: "Sunt administrator/coordonator — unde văd statisticile pentru grupurile mele?", a: "În tab-ul Echipă, la secțiunea „Statistici” — acolo vezi numărul de membri și activitatea grupurilor din subordinea ta." },
+    ],
     where: [
       { title: "Biserici", text: "Un model verificat care ajută bisericile să formeze din adolescenți lideri, nu doar ascultători." },
       { title: "Cluburi comunitare", text: "Întâlniri în centre comunitare, case și curți — oriunde școlile nu permit activități creștine." },
@@ -888,7 +947,15 @@ ro: {
     heroSub: "O strategie repetitivă de ucenicie și evanghelizare de patru săptămâni, „de la coleg la coleg”, condusă în întregime de tineri.",
     symbolLabel: "De ce un pește",
     symbolTitle: "Ichthys — semnul pescarilor de oameni",
-    symbolText: "Simbolul ichthys (греч. „pește”) a fost ales de primii creștini, care se identificau cu cuvintele lui Isus: „Veniți după Mine și vă voi face pescari de oameni.” Cuvântul funcționa și ca acronim — „Isus Hristos, Fiul lui Dumnezeu, Mântuitorul” — și a servit drept semn secret în vremuri de persecuție.",
+    symbolText: "Simbolul ichthys (greacă „pește”) a fost ales de primii creștini, care se identificau cu cuvintele lui Isus: „Veniți după Mine și vă voi face pescari de oameni.” Cuvântul funcționa și ca acronim — „Isus Hristos, Fiul lui Dumnezeu, Mântuitorul” — și a servit drept semn secret în vremuri de persecuție.",
+    symbolAcronymLabel: "Ce înseamnă fiecare literă",
+    symbolAcronym: [
+      { letter: "Ι", text: "Isus (Iēsous)" },
+      { letter: "Χ", text: "Hristos (Christos)" },
+      { letter: "Θ", text: "lui Dumnezeu (Theou)" },
+      { letter: "Υ", text: "Fiul (Huios)" },
+      { letter: "Σ", text: "Mântuitorul (Sōtēr)" },
+    ],
     acronymTitle: "F.I.S.H. — patru scopuri ale slujirii",
     acronym: [
       { l: "F", w: "Focus", t: "Concentrare" },
@@ -907,6 +974,8 @@ ro: {
     speakerTopicsTitle: "Exemple de teme pentru vorbitor",
     meetingIdeasTitle: "Cum ar putea arăta",
     gospelMethodsTitle: "Variante de a împărtăși Evanghelia",
+    gospelFeaturedLabel: "Exemplu gata de utilizat — începe aici",
+    gospelMoreLabel: "Alte variante (de explorat mai târziu)",
     weeks: {
       focus: {
         num: "Săptămâna 1", name: "FOCUS", team: "Echipa Pray",
@@ -1291,6 +1360,19 @@ uk: {
       { title: "Партнерство", text: "Партнери та прихильники, що дають служінню стабільність і розвиток." },
     ],
     whereLabel: "Де ми ловимо", whereTitle: "Церкви, клуби та школи",
+    faqLabel: "Часті запитання", faqTitle: "FAQ",
+    faqItems: [
+      { q: "Що таке цикл FISH?", a: "Повторюваний чотиритижневий цикл: Focus (згуртувати команду), Inspire (надихнути через запрошеного спікера), Share (особисті свідчення), Hook (представити Євангеліє й запропонувати відповісти). Деталі — у вкладці FISH." },
+      { q: "Як приєднатися до своєї команди в застосунку?", a: "За кодом запрошення від лідера, координатора або адміністратора вашої групи — відкрийте бота First Priority ще раз за посиланням із кодом. Немає коду — попросіть того, хто вас запросив." },
+      { q: "Як запросити нового лідера чи координатора?", a: "У вкладці «Команда» адміністратор або координатор може створити групу і згенерувати код для лідера/координатора — надішліть цей код людині в Telegram." },
+      { q: "Як працює серія (streak) у «Моїх 5»?", a: "Серія зростає, коли ви відзначаєте молитву в «Моїх 5» хоча б раз протягом дня — кожен новий день без пропуску додає +1. Якщо пропустити цілий день, серія скидається до 1 при наступній молитві." },
+      { q: "Я помолився(лась), а серія не зросла — чому?", a: "Серія рахується за календарним днем (UTC), а не 24-годинним таймером від останньої молитви. Якщо молитеся пізно вночі, іноді це зараховується на «вчора» — спробуйте наступного дня." },
+      { q: "Застосунок довго завантажується при першому відкритті — це баг?", a: "Ні. Сервер працює на безкоштовному тарифі хостингу і «засинає» приблизно через 15 хвилин без використання. Перше відкриття після паузи може зайняти до хвилини — це нормально, просто зачекайте." },
+      { q: "Чи безпечно писати особисті прохання про молитву в застосунку?", a: "Прохання про молитву бачать лише учасники вашої групи, і в списку вони без імені — але уникайте публікувати чутливі деталі (адреси, конкретні обставини, що можуть комусь нашкодити), особливо якщо ви в регіоні, де християнство переслідується." },
+      { q: "Як змінити мову інтерфейсу?", a: "Перемикач RU / EN / RO / UA — у верхній частині кожного екрана." },
+      { q: "Що таке Connect і навіщо він після тижня Hook?", a: "Connect — крок, на якому кожного, хто вирішив слідувати за Христом, потрібно пов'язати з Focus-групою та помісною церквою, щоб він не залишився наодинці зі своєю новою вірою. Деталі — у FISH → Connect." },
+      { q: "Я адміністратор або координатор — де дивитися статистику по моїх групах?", a: "У вкладці «Команда», у розділі «Статистика» — там видно кількість учасників і активність груп, які вам підпорядковані." },
+    ],
     where: [
       { title: "Церкви", text: "Перевірена модель, яка допомагає церквам виростити з підлітків лідерів, а не просто слухачів." },
       { title: "Місцеві клуби", text: "Зустрічі в громадських центрах, будинках і дворах — там, де школи не дозволяють християнські заходи." },
@@ -1307,6 +1389,14 @@ uk: {
     symbolLabel: "Чому риба",
     symbolTitle: "Іхтис — знак ловців людей",
     symbolText: "Символ іхтис (грец. «риба») обрали перші християни, які ототожнювали себе зі словами Ісуса: «Ідіть за Мною, і Я зроблю вас ловцями людей». Слово також читалося як акронім «Ісус Христос, Син Божий, Спаситель» і слугувало таємним знаком у часи гонінь.",
+    symbolAcronymLabel: "Що означає кожна літера",
+    symbolAcronym: [
+      { letter: "Ι", text: "Ісус (Ἰησοῦς)" },
+      { letter: "Χ", text: "Христос (Χριστός)" },
+      { letter: "Θ", text: "Божий (Θεοῦ)" },
+      { letter: "Υ", text: "Син (Υἱός)" },
+      { letter: "Σ", text: "Спаситель (Σωτήρ)" },
+    ],
     acronymTitle: "F.I.S.H. — чотири цілі служіння",
     acronym: [
       { l: "F", w: "Focus", t: "Зосередити" },
@@ -1325,6 +1415,8 @@ uk: {
     speakerTopicsTitle: "Приклади тем для спікера",
     meetingIdeasTitle: "Як це може виглядати",
     gospelMethodsTitle: "Варіанти, як поділитися Євангелієм",
+    gospelFeaturedLabel: "Готовий приклад — використовуйте одразу",
+    gospelMoreLabel: "Інші варіанти (на майбутнє)",
     weeks: {
       focus: {
         num: "Тиждень 1", name: "FOCUS", team: "Команда Pray",
