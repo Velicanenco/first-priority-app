@@ -298,7 +298,7 @@ a:focus-visible { outline: 2px solid var(--brand-red); outline-offset: 2px; }
 #splash .splash-bg {
   position: absolute;
   inset: 0;
-  background-image: url("../assets/img/hero-focus.jpg");
+  background-image: url("../assets/img/hero-focus.jpg?v=20261002a"); /* bump alongside ASSET_V in app.js when this file's content changes */
   background-size: cover;
   background-position: center 30%;
   filter: grayscale(1) contrast(1.15) brightness(0.55);
@@ -505,14 +505,21 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
    face off and leaving just torsos and legs. Bias this one back toward
    the top instead. */
 .hero.hero-team img { object-position: 50% 15%; }
-/* hero-hook.jpg used to be two unrelated photos pasted into one wide
-   canvas (a leftover mistake from an earlier crop) -- on a narrow phone
-   the default 68%-down crop only ever showed a slice of the left photo,
-   but on a wider viewport (tablet-width Telegram clients) enough of the
-   canvas became visible to reveal both photos side by side. The file now
-   holds a single group photo with faces in the top third, same as
-   hero-team.jpg, so it gets the same top-biased crop. */
-.hero.hero-hook img { object-position: 50% 15%; }
+/* hero-hook.jpg was the exact same close-shot group photo as hero-team.jpg
+   on the Team page -- two different hero banners showing one identical
+   picture. Replaced with a distinct photo (three young women celebrating
+   on an event stage) with faces clustered a bit lower than hero-team's,
+   so it gets its own, slightly less aggressive top-biased crop instead of
+   reusing hero-team's 15%. */
+.hero.hero-hook img { object-position: 50% 24%; }
+/* hero-home.jpg (the Home-page hero) used to be the exact same file as the
+   splash screen's background (hero-focus.jpg) -- first thing you see on
+   launch, then the exact same photo again one tap later. Now a distinct
+   photo (a FISH discipleship group studying around a table, shot from
+   slightly above), with the ring of faces sitting in the upper half of
+   the frame, so it's cropped toward the top rather than the default
+   68%-down bias tuned for other photos. */
+.hero.hero-home img { object-position: 50% 28%; }
 .hero::after {
   content: "";
   position: absolute; inset: 0;
@@ -1382,6 +1389,23 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
 }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 #toast svg { width: 15px; height: 15px; color: var(--focus); }
+
+/* FAQ floating button -- pinned to the viewport (not the page), so it
+   stays in place while the Home page scrolls underneath it, like the tab
+   bar and #toast above. Sits just above the tab bar, clear of the home
+   indicator / nav-bar safe areas on both axes. */
+.faq-fab {
+  position: fixed;
+  right: var(--space-4);
+  bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+  z-index: 45;
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--ink); color: var(--paper);
+  box-shadow: 0 6px 20px rgba(0,0,0,.28);
+}
+.faq-fab svg { width: 24px; height: 24px; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
