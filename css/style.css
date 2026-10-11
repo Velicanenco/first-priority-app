@@ -407,6 +407,14 @@ a:focus-visible { outline: 2px solid var(--brand-red); outline-offset: 2px; }
 .lang-btn.active { background: var(--ink); color: var(--paper); }
 
 main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
+/* "gated" = unregistered user locked onto the "I'm New" page (see
+   applyRegistrationGate() in app.js) -- no tabbar at all until they submit
+   the registration form, so the bottom padding main reserves for it (and
+   the faq-fab's tabbar-relative offset) would otherwise leave dead empty
+   space at the bottom of the brochure. */
+#app.gated main { padding-bottom: env(safe-area-inset-bottom, 0px); }
+#app.gated .tabbar { display: none; }
+#app.gated .faq-fab { bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px)); }
 
 .page { display: none; }
 /* Switching tabs used to be an instant, jarring cut (display:none -> block
@@ -952,6 +960,14 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
   color: #fff; padding: 5px 10px; border-radius: 4px; margin: 0 var(--space-4);
 }
 
+/* "N of 4 stars" week-progress row on each week pop-up -- see starRow() in
+   app.js. Filled stars pick up that week's own band color (passed inline),
+   empty ones stay a neutral hint tone so the filled count reads instantly. */
+.week-star-row { display: flex; gap: 4px; margin: 10px var(--space-4) 0; }
+.week-star { width: 15px; height: 15px; color: var(--tg-hint); opacity: 0.45; }
+.week-star.filled { opacity: 1; }
+.week-star svg { width: 100%; height: 100%; display: block; }
+
 /* agenda table */
 .agenda { border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--line); margin: var(--space-4) 0; }
 .agenda-head { display: flex; justify-content: space-between; background: var(--ink); color: var(--paper); padding: 10px 14px; font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
@@ -1212,6 +1228,50 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
 .five-add button svg { width: 16px; height: 16px; }
 .five-add.disabled button { opacity: .35; pointer-events: none; }
 
+/* A council/roster row that was just added gets the same little "pop" the
+   My 5 toggle buttons use (see @keyframes five-toggle-pop above) -- reusing
+   the keyframe but scoping it to .five-item too, since renderCouncilItem
+   applies "just-toggled" to the whole row, not to a .five-toggle button. */
+.five-item.just-toggled { animation: five-toggle-pop 360ms var(--ease-spring); }
+
+/* My Club — weekly check-in "done" state. Mirrors .five-streak's warm,
+   celebratory pill styling instead of a flat system-green success banner,
+   so it reads as part of the same gamified visual language. */
+.checkin-done-badge {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: var(--space-3);
+  padding: 11px 14px;
+  border-radius: var(--radius-md);
+  background: rgba(46,160,90,.14);
+  color: #2ea05a;
+  font-size: 13.5px; font-weight: 800;
+}
+.checkin-done-badge svg { width: 17px; height: 17px; flex: none; }
+
+/* My Club — youth council roster rows. Stacked layout: avatar/name/remove
+   on top, then a full-width row of 4 team pills below -- see
+   renderCouncilItem's comment for why this isn't a single inline row. */
+.five-item.council-item { flex-direction: column; align-items: stretch; gap: var(--space-2); }
+.council-item-top { display: flex; align-items: center; gap: var(--space-3); }
+.council-item-top .five-item-body { display: flex; align-items: center; }
+
+/* My Club — youth council "assign a team" pills. Same four-color FISH
+   accent system as .five-toggle / .team-pill, but sized and shaped like a
+   small selectable chip row rather than a single always-on badge. flex:1
+   + centered text so all 4 share the row evenly instead of hugging left. */
+.team-select-pill {
+  flex: 1;
+  text-align: center;
+  font-size: 11px; font-weight: 800; letter-spacing: .02em; text-transform: uppercase;
+  border: 1.5px solid var(--line); border-radius: 999px;
+  padding: 6px 4px; color: var(--tg-hint); background: transparent;
+}
+.team-select-pill[data-on="true"] { border-color: transparent; color: #fff; }
+.team-select-pill.pray[data-on="true"] { background: var(--focus); color: var(--focus-ink); }
+.team-select-pill.bless[data-on="true"] { background: var(--inspire); color: var(--inspire-ink); }
+.team-select-pill.serve[data-on="true"] { background: var(--share); color: #fff; }
+.team-select-pill.tell[data-on="true"] { background: var(--hook); color: var(--hook-ink); }
+
 /* ---------------------------------------------------------------------- */
 /* Profile / registration — role badge, invite codes, group management     */
 /* ---------------------------------------------------------------------- */
@@ -1314,19 +1374,14 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
 .five-empty { text-align: center; padding: var(--space-6) var(--space-4); color: var(--tg-hint); font-size: 13.5px; }
 
 /* ---------------------------------------------------------------------- */
-/* "My 5" extras — random verse, encouragements feed, prayer-needs board   */
+/* Home — daily verse + encouragements feed. (Also still used by the       */
+/* community prayer-needs board below, which lives on Five/Resources.)     */
 /* ---------------------------------------------------------------------- */
 
 .verse-card { margin-top: var(--space-4); }
 .verse-card p { font-size: 13.5px; font-style: italic; line-height: 1.5; margin: 0 0 10px; color: var(--ink-soft); }
 .verse-card-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
 .verse-card-foot cite { font-size: 12px; font-weight: 700; color: var(--tg-hint); font-style: normal; }
-.verse-next-btn {
-  flex: none; width: 30px; height: 30px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--paper); color: var(--ink-soft); border: none;
-}
-.verse-next-btn svg { width: 15px; height: 15px; }
 
 .encouragement-card { margin-top: var(--space-3); padding: 0; overflow: hidden; }
 .encouragement-kicker {
