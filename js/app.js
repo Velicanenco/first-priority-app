@@ -44,13 +44,23 @@ const state = {
   // in one GET /api/stats call.
   statsCountryDetail: null, // { country } | null
 
-  // "My 5" extras: random verse, community prayer board, encouragements feed.
-  fiveVerseIndex: -1, // index into t().five.verseBank currently shown; -1 = "not picked yet" (renderFive lazily randomizes it on first paint) — see pickRandomVerse()
+  // "My 5" extras: community prayer board. (The daily verse + encouragement
+  // cards that used to live here too now live only on Home -- see
+  // pickDailyVerse() -- removing a straight duplicate between the two tabs.)
   prayerFeed: null, // { id, text, authorName, prayedCount, alreadyPrayed } | null — the one "someone else's need" currently shown
   prayerFeedStatus: "idle", // idle | loading | loaded | empty | error
   prayerFeedBusy: false, // true while a pray-tap or next-need fetch is in flight, to prevent double-taps
   myPrayerNeeds: [], // GET /api/prayer-needs/mine — this user's own posted needs + their prayed counts
   encouragement: null, // { id, photo_path, caption, created_at } | null — GET /api/encouragements/latest
+
+  // "My Club" page: a leader's own group (GET /api/club/overview) — youth
+  // council roster, this group's own "My 5" numbers, and the weekly
+  // check-in streak. Only ever fetched for role==="leader" with a group_id
+  // (see loadClubOverview()); stays null for every other role.
+  club: null, // { group, stats, council, checkins, checkedInThisWeek, checkinStreak } | null
+  clubStatus: "idle", // idle | loading | loaded | error
+  checkinNoteDraft: "", // the check-in note textbox's in-progress value, kept across re-renders so a toast/re-render doesn't wipe what the leader is mid-typing
+  councilJustAdded: null, // the member id most recently added, for a one-time entrance pop (same idiom as fiveJustToggled)
 };
 
 const el = {
@@ -58,6 +68,7 @@ const el = {
   app: document.getElementById("app"),
   splash: document.getElementById("splash"),
   pages: {
+    imnew: document.getElementById("page-imnew"),
     home: document.getElementById("page-home"),
     fish: document.getElementById("page-fish"),
     team: document.getElementById("page-team"),
@@ -200,6 +211,13 @@ function setLang(lang, { silent } = {}) {
 
 function switchTab(tab) {
   state.tab = tab;
+  // "gated" hides the tabbar entirely -- only while the user genuinely
+  // hasn't registered yet (see applyRegistrationGate()). A registered user
+  // who taps Home's "back to I'm New" link still lands on this same
+  // "imnew" page, but keeps their tabbar, since they're not actually
+  // locked out of anything -- see renderImNew()'s registered/unregistered
+  // branch for how the page content itself adapts.
+  el.app.classList.toggle("gated", tab === "imnew" && !(state.me && state.me.registered));
   Object.entries(el.pages).forEach(([k, node]) => {
     node.classList.toggle("active", k === tab);
   });
@@ -314,6 +332,38 @@ function wirePushRows(root) {
   });
 }
 
+// Same nav-row markup as navRow() above, but for links that live INSIDE the
+// open week-detail sheet rather than on a plain page: a stack page (#stackRoot,
+// z-index 60) renders BEHIND an open sheet (z-index 90/91), so the sheet has
+// to finish closing before the push happens, or the pushed page would be
+// invisible underneath it. Mirrors the existing [data-gospel-method] wiring
+// in renderWeekSheetContent() -- see that comment for why the popstate wait
+// matters (a pushPage() fired in the same tick as history.back() races the
+// sheet's own popstate-driven close).
+function wireSheetPushRows(root) {
+  root.querySelectorAll("[data-push]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const key = btn.dataset.push;
+      window.addEventListener("popstate", function onSheetClosed() {
+        window.removeEventListener("popstate", onSheetClosed);
+        pushPage(key);
+      }, { once: true });
+      goBack();
+    });
+  });
+}
+
+// Four-star "week N of 4" progress row shown on each week pop-up sheet (see
+// WEEK_STAR_COUNT above). `color` is that week's own band color, so the
+// filled stars pick up the same accent as the sheet-band pill above them.
+function starRow(n, color) {
+  const total = 4;
+  return `<div class="week-star-row">${Array.from({ length: total }, (_, i) => {
+    const filled = i < n;
+    return `<span class="week-star${filled ? " filled" : ""}"${filled ? ` style="color:${color}"` : ""}>${filled ? ICONS.starFilled : ICONS.star}</span>`;
+  }).join("")}</div>`;
+}
+
 /* Accordion rows — tap a label, its text unfolds right there on the page
    (used for Vision/Mission/Strategy, Where we fish, Connect steps, and the
    team growth tips — content that's short enough not to deserve its own
@@ -373,17 +423,20 @@ function wireAccordions(root) {
 }
 
 /* ------------------------------------------------------------------ */
-/* PAGE: HOME (short hub) + pushed sub-pages                            */
+/* PAGE: I'M NEW (pre-registration brochure, see index.html #page-imnew)*/
 /* ------------------------------------------------------------------ */
 
-// Home used to be one long scroll: full paragraphs for "about", a text
-// block for "battle", and a whole accordion for "where we fish", all
-// inline, one after another. Now each of those is one tap away as its own
-// pushed page (see registerHomeSubpages below) -- Home itself is just the
-// hero, the quote, a short list of what to explore, and the CTA.
-function renderHome() {
-  const d = t().home;
-  el.pages.home.innerHTML = `
+// This is almost entirely what Home used to be (hero, quote, About/Where
+// nav-rows, CTA) -- only now it's gated to unregistered users (see
+// applyRegistrationGate()) and leads with a registration form instead of
+// jumping straight to "learn more". "4 pillars" and the "battle" context
+// piece that used to live in this list moved out (pillars -> Resources,
+// battle -> FISH's vision-casting popup) -- not rebuilt here yet.
+function renderImNew() {
+  const d = t().imNew;
+  const registered = !!(state.me && state.me.registered);
+  const prefName = (state.me && state.me.first_name) || window.__tg?.initDataUnsafe?.user?.first_name || "";
+  el.pages.imnew.innerHTML = `
     <div class="hero hero-home fade-in">
       <img src="${heroSrc('hero-home.jpg')}" alt="" />
       <div class="hero-inner">
@@ -394,9 +447,38 @@ function renderHome() {
     </div>
 
     <div class="section fade-in">
+      <p class="section-label">${esc(d.registerLabel)}</p>
+      <h2 class="display section-title">${esc(d.registerTitle)}</h2>
+      ${registered ? `
+      <div class="card" style="padding:var(--space-4)">
+        <span class="role-badge">${esc(d.registeredBadge)}</span>
+        <p class="section-text" style="margin:8px 0 0">${esc(d.registeredAsLabel)}: ${esc(state.me.church || "—")} · ${esc(state.me.city || "—")}</p>
+      </div>` : `
+      <p class="section-text">${esc(d.registerText)}</p>
+      <div class="card" style="padding:var(--space-4)">
+        <div class="field-stack">
+          <input type="text" id="imNewName" class="field-input" maxlength="120" placeholder="${esc(d.registerNamePlaceholder)}" aria-label="${esc(d.registerNameLabel)}" value="${esc(prefName)}" />
+          <input type="text" id="imNewChurch" class="field-input" maxlength="120" placeholder="${esc(d.registerChurchPlaceholder)}" aria-label="${esc(d.registerChurchLabel)}" />
+          <input type="text" id="imNewCity" class="field-input" maxlength="120" placeholder="${esc(d.registerCityPlaceholder)}" aria-label="${esc(d.registerCityLabel)}" />
+          <input type="text" id="imNewCountry" class="field-input" maxlength="120" placeholder="${esc(d.registerCountryPlaceholder)}" aria-label="${esc(d.registerCountryLabel)}" />
+        </div>
+        <button id="imNewRegisterBtn" class="btn full tg-press" style="margin-top:var(--space-3)">${esc(d.registerSubmitBtn)}</button>
+      </div>`}
+    </div>
+
+    <div class="section fade-in">
       <div class="quote-card">
         <p>${esc(d.quote)}</p>
         <cite class="quote-attribution">— ${esc(d.quoteAuthor)}</cite>
+      </div>
+    </div>
+
+    <div class="section fade-in">
+      <p class="section-label">${esc(d.storyLabel)}</p>
+      <h2 class="display section-title">${esc(d.storyTitle)}</h2>
+      <div class="card" style="padding:var(--space-4)">
+        <p class="section-text" style="margin:0">${esc(d.storyText)}</p>
+        <p style="margin:var(--space-2) 0 0;font-size:12.5px;color:var(--tg-hint)">— ${esc(d.storyAttribution)}</p>
       </div>
     </div>
 
@@ -405,9 +487,163 @@ function renderHome() {
       <h2 class="display section-title">${esc(d.exploreTitle)}</h2>
       <div class="card" style="padding:0 var(--space-4)">
         ${navRow({ icon: ICONS.heart, title: d.aboutTitle, desc: d.aboutLabel, key: "home-about" })}
-        ${navRow({ icon: ICONS.target, title: d.battleTitle, desc: d.battleLabel, key: "home-context" })}
-        ${navRow({ icon: ICONS.hands, title: d.pillarsTitle, desc: d.pillarsLabel, key: "home-pillars" })}
         ${navRow({ icon: ICONS.church, title: d.whereTitle, desc: d.whereLabel, key: "home-where" })}
+      </div>
+    </div>
+
+    <div class="section fade-in" style="padding-bottom:8px">
+      <div class="quote-card tg-press" id="imNewCta" style="cursor:pointer">
+        <p style="font-size:17px">${esc(d.ctaTitle)}</p>
+        <cite>${esc(d.ctaText)}</cite>
+      </div>
+    </div>
+  `;
+  document.getElementById("imNewCta").addEventListener("click", () => {
+    if (registered) switchTab("fish");
+    else document.getElementById("imNewName")?.focus();
+  });
+  if (!registered) wireImNewRegisterForm();
+  wirePushRows(el.pages.imnew);
+  window.wireUpPressFeedback(el.pages.imnew);
+  staggerIn(el.pages.imnew, ".nav-row");
+}
+
+// POST /api/me/register -- name pre-filled from Telegram above but
+// editable, church/city/country are new (see routes/me.js on the backend;
+// there is no registration of any kind before this chunk). On success,
+// re-render this same page (now showing the "registered" badge branch) and
+// let applyRegistrationGate() release the user to Home.
+function wireImNewRegisterForm() {
+  const btn = document.getElementById("imNewRegisterBtn");
+  if (!btn) return;
+  btn.addEventListener("click", async () => {
+    const d = t().imNew;
+    const name = document.getElementById("imNewName").value.trim();
+    const church = document.getElementById("imNewChurch").value.trim();
+    const city = document.getElementById("imNewCity").value.trim();
+    const country = document.getElementById("imNewCountry").value.trim();
+    if (!name || !church || !city || !country) {
+      toast(d.registerErrorRequired, ICONS.close);
+      window.haptic.notification("error");
+      return;
+    }
+    btn.disabled = true;
+    try {
+      const res = await window.fpApi.register(name, church, city, country);
+      // Merge, not replace -- the register response doesn't carry `group`
+      // (GET /api/me does), and losing it here would blank out the Team
+      // tab's group card until the next loadMe().
+      state.me = { ...state.me, ...res };
+      state.meStatus = "loaded";
+      window.haptic.notification("success");
+      renderImNew();
+      applyRegistrationGate();
+    } catch (err) {
+      console.error("[first-priority-app] register failed:", err);
+      toast(d.registerErrorGeneric, ICONS.close);
+      window.haptic.notification("error");
+      btn.disabled = false;
+    }
+  });
+}
+
+function registerImNewSubpages() {
+  // "About" -- intro paragraph plus the Vision/Mission/Strategy accordion.
+  registerStackPage("home-about", () => t().imNew.aboutTitle, (body) => {
+    const d = t().imNew;
+    body.innerHTML = `
+      <div class="section" style="padding-top:var(--space-4)">
+        <p class="section-text">${esc(d.aboutText)}</p>
+        <div class="card accordion" style="padding:0 var(--space-4);margin-top:var(--space-3)">
+          ${accordionItem({ title: d.visionLabel, text: d.visionText })}
+          ${accordionItem({ title: d.missionLabel, text: d.missionText })}
+          ${accordionItem({ title: d.strategyLabel, text: d.strategyText })}
+        </div>
+      </div>`;
+    wireAccordions(body);
+  });
+
+  // "Where we fish" -- the Churches/Clubs/Schools accordion.
+  registerStackPage("home-where", () => t().imNew.whereTitle, (body) => {
+    const d = t().imNew;
+    body.innerHTML = `
+      <div class="section" style="padding-top:var(--space-4)">
+        <div class="card accordion" style="padding:0 var(--space-4)">
+          ${d.where.map((w) => accordionItem({ title: w.title, text: w.text })).join("")}
+        </div>
+      </div>`;
+    wireAccordions(body);
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/* PAGE: HOME (registered users only) + pushed sub-pages                */
+/* ------------------------------------------------------------------ */
+
+// Deterministic "verse of the day": same verse for everyone on the same
+// UTC calendar date, moving on at UTC midnight -- a real daily rotation,
+// not a per-visit shuffle. This is now the app's only verse card -- the
+// Five/Resources tab used to show its own separate shuffle-a-verse card
+// too, which just duplicated this one, so it was removed from renderFive().
+function pickDailyVerse(bank) {
+  if (!bank || !bank.length) return null;
+  const dayNumber = Math.floor(Date.now() / 86400000);
+  return bank[dayNumber % bank.length];
+}
+
+function renderHome() {
+  const d = t().home;
+  // Reuses the Five/Resources tab's own verse bank rather than duplicating
+  // the verse text in two places in i18n.js.
+  const verseBank = (t().five && t().five.verseBank) || [];
+  const verse = pickDailyVerse(verseBank);
+  el.pages.home.innerHTML = `
+    <div class="hero hero-home fade-in">
+      <img src="${heroSrc('hero-home.jpg')}" alt="" />
+      <div class="hero-inner">
+        <span class="hero-ribbon">${esc(d.heroRibbon)}</span>
+        <h1 class="display hero-title"><span>${esc(d.heroTitle)}</span></h1>
+        <p class="hero-sub">${esc(d.heroSub)}</p>
+      </div>
+    </div>
+
+    ${verse ? `
+    <div class="section fade-in">
+      <p class="section-label">${esc(d.verseLabel)}</p>
+      <div class="card verse-card">
+        <p>${esc(verse.text)}</p>
+        <div class="verse-card-foot"><cite>${esc(verse.ref)}</cite></div>
+      </div>
+    </div>` : ""}
+
+    <div class="section fade-in">
+      <p class="section-label">${esc(d.updatesLabel)}</p>
+      <h2 class="display section-title">${esc(d.updatesTitle)}</h2>
+      ${state.encouragement ? `
+      <div class="card encouragement-card">
+        <span class="encouragement-kicker">${esc(d.encouragementLabel)}</span>
+        <img src="${esc(state.encouragement.photo_path)}" alt="" class="encouragement-photo" />
+        <p class="encouragement-caption">${esc(state.encouragement.caption)}</p>
+      </div>` : ""}
+      <button id="homeShareStoryBtn" class="btn secondary full tg-press" style="margin-top:var(--space-2)">${esc(d.shareStoryBtn)}</button>
+    </div>
+
+    <div class="section fade-in">
+      <div class="card" style="padding:0 var(--space-4)">
+        <button class="nav-row tg-press" id="homeImNewRow">
+          <div class="nav-row-icon">${ICONS.heart}</div>
+          <div class="nav-row-body"><h4>${esc(d.imNewTitle)}</h4><p>${esc(d.imNewLabel)}</p></div>
+          ${ICONS.chevronRight}
+        </button>
+      </div>
+    </div>
+
+    <div class="section fade-in">
+      <p class="section-label">${esc(d.prayerLabel)}</p>
+      <h2 class="display section-title">${esc(d.prayerTitle)}</h2>
+      <div class="card" style="padding:var(--space-4)">
+        <p class="section-text">${esc(d.prayerText)}</p>
+        <button id="homePrayerBtn" class="btn full tg-press" style="margin-top:var(--space-2)">${esc(d.prayerBtn)}</button>
       </div>
     </div>
 
@@ -423,79 +659,22 @@ function renderHome() {
     </button>
   `;
   document.getElementById("homeCta").addEventListener("click", () => switchTab("fish"));
-  // Standalone floating button rather than another row buried in the
-  // "learn more" list -- FAQ is about using the app itself, not ministry
-  // content, so it gets its own always-visible entry point. position:fixed
-  // (not absolute), so it stays pinned to the viewport as the Home page
-  // scrolls underneath it, same mechanism as the bottom tab bar and #toast.
+  document.getElementById("homeImNewRow").addEventListener("click", () => switchTab("imnew"));
+  document.getElementById("homePrayerBtn").addEventListener("click", () => switchTab("five"));
+  document.getElementById("homeShareStoryBtn").addEventListener("click", () => pushPage("home-share-story"));
+  // Standalone floating button rather than another row buried in a list --
+  // FAQ is about using the app itself, so it gets its own always-visible
+  // entry point. position:fixed (not absolute), so it stays pinned to the
+  // viewport as Home scrolls underneath it, same mechanism as the tab bar.
   document.getElementById("homeFaqFab").addEventListener("click", () => pushPage("home-faq"));
-  wirePushRows(el.pages.home);
   window.wireUpPressFeedback(el.pages.home);
   staggerIn(el.pages.home, ".nav-row");
 }
 
 function registerHomeSubpages() {
-  registerStackPage("home-pillars", () => t().home.pillarsTitle, (body) => {
-    const d = t().home;
-    body.innerHTML = `
-      <div class="section" style="padding-top:var(--space-4)">
-        <p class="section-text">${esc(d.pillarsTitle)}</p>
-        <div class="pillar-grid">
-          ${d.pillars.map((p, i) => `
-            <div class="pillar">
-              <div class="pillar-icon">${[ICONS.hands, ICONS.book, ICONS.praying, ICONS.handshake][i]}</div>
-              <h4>${esc(p.title)}</h4>
-              <p>${esc(p.text)}</p>
-            </div>
-          `).join("")}
-        </div>
-      </div>`;
-    staggerIn(body, ".pillar");
-  });
-
-  // "About" -- moved here wholesale from the old inline Home section:
-  // the intro paragraph plus the Vision/Mission/Strategy accordion.
-  registerStackPage("home-about", () => t().home.aboutTitle, (body) => {
-    const d = t().home;
-    body.innerHTML = `
-      <div class="section" style="padding-top:var(--space-4)">
-        <p class="section-text">${esc(d.aboutText)}</p>
-        <div class="card accordion" style="padding:0 var(--space-4);margin-top:var(--space-3)">
-          ${accordionItem({ title: d.visionLabel, text: d.visionText })}
-          ${accordionItem({ title: d.missionLabel, text: d.missionText })}
-          ${accordionItem({ title: d.strategyLabel, text: d.strategyText })}
-        </div>
-      </div>`;
-    wireAccordions(body);
-  });
-
-  // "Context / battle" -- the scrolling belief-quote ribbon plus the
-  // battle text, also moved here unchanged from the old inline section.
-  registerStackPage("home-context", () => t().home.battleTitle, (body) => {
-    const d = t().home;
-    body.innerHTML = `
-      <div class="section" style="padding-top:var(--space-4)">
-        <div class="ribbon-wrap"><div class="ribbon"><span>${esc(d.beliefQuote)}</span><span>${esc(d.beliefQuote)}</span></div></div>
-        <p class="section-text">${esc(d.battleText)}</p>
-      </div>`;
-  });
-
-  // "Where we fish" -- the Churches/Clubs/Schools accordion.
-  registerStackPage("home-where", () => t().home.whereTitle, (body) => {
-    const d = t().home;
-    body.innerHTML = `
-      <div class="section" style="padding-top:var(--space-4)">
-        <div class="card accordion" style="padding:0 var(--space-4)">
-          ${d.where.map((w) => accordionItem({ title: w.title, text: w.text })).join("")}
-        </div>
-      </div>`;
-    wireAccordions(body);
-  });
-
   // FAQ -- grounded in things people actually asked about the app itself
   // (streak rules, cold-start wait, invite codes, prayer-request privacy),
-  // not just ministry content. Same accordion component as "About"/"Where
-  // we fish" above, just fed questions instead of topic titles.
+  // not just ministry content.
   registerStackPage("home-faq", () => t().home.faqTitle, (body) => {
     const d = t().home;
     body.innerHTML = `
@@ -505,6 +684,17 @@ function registerHomeSubpages() {
         </div>
       </div>`;
     wireAccordions(body);
+  });
+
+  // "Share your story" -- purely informational for now: there's no
+  // self-serve submission endpoint yet (encouragements are still published
+  // by whoever holds CONTENT_PUBLISH_SECRET, see encouragementsPublish.js),
+  // so this just tells people who to send their story to.
+  registerStackPage("home-share-story", () => t().home.shareStoryTitle, (body) => {
+    body.innerHTML = `
+      <div class="section" style="padding-top:var(--space-4)">
+        <p class="section-text">${esc(t().home.shareStoryText)}</p>
+      </div>`;
   });
 }
 
@@ -516,6 +706,10 @@ const WEEK_ORDER = ["focus", "inspire", "share", "hook"];
 const WEEK_ICON = { focus: "weekFocus", inspire: "weekInspire", share: "weekShare", hook: "weekHook" };
 const WEEK_PHOTO = { focus: "hero-focus.jpg", inspire: "hero-inspire.jpg", share: "hero-share.jpg", hook: "hero-hook.jpg" };
 const WEEK_DAYS = { focus: "1–7", inspire: "8–14", share: "15–21", hook: "22–28" };
+// "N of 4 stars" progress indicator on each week's pop-up sheet -- position
+// in the 4-week cycle, independent of whatever that week's own displayed
+// number says (see HOOK's literal "Week 3" band override in i18n.js).
+const WEEK_STAR_COUNT = { focus: 1, inspire: 2, share: 3, hook: 4 };
 
 function renderFish() {
   const d = t().fish;
@@ -556,6 +750,14 @@ function renderFish() {
       <h2 class="display section-title">${esc(d.weeksTitle)}</h2>
       <div class="week-grid">
         ${WEEK_ORDER.map(wk => renderWeekCard(wk, d.weeks[wk], d)).join("")}
+      </div>
+    </div>
+
+    <div class="section fade-in">
+      <div class="card" style="padding:0 var(--space-4)">
+        ${navRow({ icon: ICONS.target, title: d.battleTitle, desc: d.battleLabel, key: "fish-battle" })}
+        ${navRow({ icon: ICONS.book, title: d.sermonTitle, desc: d.sermonLabel, key: "fish-sermon" })}
+        ${navRow({ icon: ICONS.users, title: d.leadershipTitle, desc: d.leadershipLabel, key: "team-structure" })}
       </div>
     </div>
 
@@ -614,11 +816,40 @@ function openWeekSheet(wk) {
   openSheetTracked();
 }
 
+// FOCUS and INSPIRE both get this exact same trio of sections (evangelism
+// training + initial tool, Focus Group tips/topics, "My 5" training) -- per
+// Joey's own edits these were written out identically for both weeks (see
+// joey-edits.md item 7's ⚠️ flag). Sharing one render function keeps the
+// code from duplicating itself while the actual CONTENT still shows up
+// verbatim on both sheets, which is what was literally asked for.
+function renderFocusInspireExtras(d) {
+  const tool = (d.gospelMethods || [])[0] || {};
+  return `
+      <h3 style="font-size:16px;margin:20px 0 8px">${esc(d.evangelismTrainingTitle)}</h3>
+      <p class="section-text">${esc(d.evangelismTrainingText)}</p>
+      <div class="card" style="padding:0 var(--space-4);margin-top:12px">
+        ${navRow({ icon: ICONS.book, title: tool.navTitle || "", desc: d.evangelismToolBtn, key: "fish-gospel-0" })}
+      </div>
+      <h3 style="font-size:16px;margin:20px 0 8px">${esc(d.focusGroupTipsTitle)}</h3>
+      <div class="card">
+        ${d.focusGroupTips.map((s, i) => `
+          <div class="list-row"><div class="list-row-num">${i + 1}</div><div class="list-row-body"><p>${esc(s)}</p></div></div>
+        `).join("")}
+      </div>
+      <div class="card accordion" style="padding:0 var(--space-4);margin-top:16px">
+        ${accordionListItem({ title: d.focusGroupTopicsTitle, items: d.focusGroupTopics })}
+      </div>
+      <div class="myfive-mini" style="margin-top:16px">
+        <p><b style="color:var(--ink)">${esc(d.my5TrainingTitle)}</b><br/>${esc(d.my5TrainingText)}</p>
+        <button class="btn tg-press" data-my5-training>${esc(d.my5TrainingBtn)} ${ICONS.arrowUpRight}</button>
+      </div>`;
+}
+
 function renderWeekSheetContent(wk) {
   const d = t().fish;
   const w = d.weeks[wk];
   state.sheetWeek = wk;
-  el.sheetTitle.textContent = w.name;
+  el.sheetTitle.textContent = w.headerTitle || w.name;
   const bandColorMap = { focus: "var(--focus)", inspire: "var(--inspire)", share: "var(--share)", hook: "var(--hook)" };
   const bandInkMap = { focus: "var(--focus-ink)", inspire: "var(--inspire-ink)", share: "#fff", hook: "var(--hook-ink)" };
 
@@ -634,10 +865,7 @@ function renderWeekSheetContent(wk) {
           </div>
         `).join("")}
       </div>
-      ${w.speakerTopics && w.speakerTopics.length ? `
-      <div class="card accordion" style="padding:0 var(--space-4);margin-top:16px">
-        ${accordionListItem({ title: d.speakerTopicsTitle, items: w.speakerTopics })}
-      </div>` : ""}`;
+      ${renderFocusInspireExtras(d)}`;
   } else if (wk === "inspire") {
     extra = `
       <h3 style="font-size:16px;margin:20px 0 8px">${esc(w.hopeTitle)}</h3>
@@ -645,14 +873,23 @@ function renderWeekSheetContent(wk) {
         ${w.guidelines.map((g, i) => `
           <div class="list-row"><div class="list-row-num">${i + 1}</div><div class="list-row-body"><p>${esc(g)}</p></div></div>
         `).join("")}
-      </div>`;
+      </div>
+      ${w.speakerTopics && w.speakerTopics.length ? `
+      <div class="card accordion" style="padding:0 var(--space-4);margin-top:16px">
+        ${accordionListItem({ title: d.speakerTopicsTitle, items: w.speakerTopics })}
+      </div>` : ""}
+      ${renderFocusInspireExtras(d)}`;
   } else if (wk === "share") {
     extra = `
       <button class="witness-btn tg-press" id="openTestimonyBtn">
         <div class="wb-icon">${ICONS.book}</div>
         <div class="wb-text"><b>${esc(t().testimony.sheetTitle)}</b><span>${esc(t().testimony.sheetSubtitle)}</span></div>
         ${ICONS.chevronRight}
-      </button>`;
+      </button>
+      <div class="myfive-mini" style="margin-top:16px">
+        <p><b style="color:var(--ink)">${esc(w.prayPromoteHookTitle)}</b><br/>${esc(w.prayPromoteHookText)}</p>
+        <button class="btn tg-press" id="openHookFromShare">${esc(w.prayPromoteHookBtn)} ${ICONS.arrowUpRight}</button>
+      </div>`;
   } else if (wk === "hook") {
     const gospelMethods = d.gospelMethods || [];
     extra = `
@@ -660,12 +897,22 @@ function renderWeekSheetContent(wk) {
         <p>${esc(t().five.heroSub)}</p>
         <button class="btn tg-press" id="openFiveFromHook">${esc(t().fish.fiveCardBtn)} ${ICONS.arrowUpRight}</button>
       </div>
+      ${w.inviteFriendsTitle ? `
+      <div class="card" style="padding:var(--space-4);margin-top:16px">
+        <h4 style="margin:0 0 8px">${esc(w.inviteFriendsTitle)}</h4>
+        <p class="section-text" style="margin:0">${esc(w.inviteFriendsText)}</p>
+      </div>` : ""}
       ${w.hookTips && w.hookTips.length ? `
       <h3 style="font-size:16px;margin:20px 0 8px">${esc(d.hookTipsTitle)}</h3>
       <div class="card">
         ${w.hookTips.map((s, i) => `
           <div class="list-row"><div class="list-row-num">${i + 1}</div><div class="list-row-body"><p>${esc(s)}</p></div></div>
         `).join("")}
+      </div>` : ""}
+      ${w.hookWeekTips && w.hookWeekTips.length ? `
+      <div class="card" style="margin-top:16px">
+        <p class="section-label" style="margin-bottom:6px">${esc(w.hookWeekTipsTitle)}</p>
+        ${w.hookWeekTips.map((s) => `<p style="font-size:13.5px;line-height:1.5;color:var(--ink-soft);margin:6px 0 0">${esc(s)}</p>`).join("")}
       </div>` : ""}
       ${w.meetingIdeas && w.meetingIdeas.length ? `
       <div class="card accordion" style="padding:0 var(--space-4);margin-top:16px">
@@ -703,20 +950,26 @@ function renderWeekSheetContent(wk) {
             ${ICONS.chevronRight}
           </button>
         `).join("")}
+      </div>
+      <div class="card" style="padding:0 var(--space-4);margin-top:12px">
+        ${navRow({ icon: ICONS.compass2, title: d.gospelResourcesNavTitle, desc: d.gospelResourcesNavDesc, key: "resources-gospel" })}
       </div>`;
       })() : ""}`;
   }
 
-  const teamStepsBlock = (w.teamSteps && w.teamSteps.length) ? `
-      <h3 style="font-size:16px;margin:20px 0 8px">${esc(d.teamStepsTitle)}</h3>
-      <div class="card">
-        ${w.teamSteps.map((s, i) => `
-          <div class="list-row"><div class="list-row-num">${i + 1}</div><div class="list-row-body"><p>${esc(s)}</p></div></div>
-        `).join("")}
-      </div>` : "";
+  // "Setting Up Your Youth Council and Plan a Cycle" moved OFF every week's
+  // sheet onto its own shared stack page (see registerFishSubpages()) --
+  // all 4 weeks asked for this identically (joey-edits.md items 6-9), and
+  // consolidating it in one place also covers "could have assignments for
+  // all the teams" instead of repeating the same section four times inline.
+  const teamStepsBlock = `
+      <div class="card" style="padding:0 var(--space-4);margin-top:16px">
+        ${navRow({ icon: ICONS.users, title: d.youthCouncilNavTitle, desc: d.youthCouncilNavDesc, key: "fish-youth-council" })}
+      </div>`;
 
   el.sheetBody.innerHTML = `
-    <span class="sheet-band" style="background:${bandColorMap[wk]};color:${bandInkMap[wk]}">${esc(w.num)} · ${esc(w.team)}</span>
+    <span class="sheet-band" style="background:${bandColorMap[wk]};color:${bandInkMap[wk]}">${esc(w.bandNum || w.num)} · ${esc(d.teamRunsLabel)} ${esc(w.team)}</span>
+    ${starRow(WEEK_STAR_COUNT[wk], bandColorMap[wk])}
     <div style="padding:0 var(--space-4)">
       <p class="section-text" style="margin-top:14px">${esc(w.desc)}</p>
       <h3 style="font-size:16px;margin:20px 0 0">${esc(d.agendaTitle)}</h3>
@@ -733,6 +986,19 @@ function renderWeekSheetContent(wk) {
   if (testimonyBtn) testimonyBtn.addEventListener("click", openTestimonySheet);
   const fiveBtn = document.getElementById("openFiveFromHook");
   if (fiveBtn) fiveBtn.addEventListener("click", () => { goBack(); switchTab("five"); });
+  const my5TrainingBtn = el.sheetBody.querySelector("[data-my5-training]");
+  if (my5TrainingBtn) my5TrainingBtn.addEventListener("click", () => { goBack(); switchTab("five"); });
+  const hookFromShareBtn = document.getElementById("openHookFromShare");
+  if (hookFromShareBtn) hookFromShareBtn.addEventListener("click", () => {
+    // Opens a NEW sheet (openWeekSheet -> openSheetTracked -> pushState), so
+    // it has to wait for the Share sheet's own close to finish first -- same
+    // history-pushState race as the gospel-method tiles below.
+    window.addEventListener("popstate", function onSheetClosed() {
+      window.removeEventListener("popstate", onSheetClosed);
+      openWeekSheet("hook");
+    }, { once: true });
+    goBack();
+  });
   // Gospel-method tiles live inside the Hook sheet, but each one pushes a
   // full stack page (#stackRoot, z-index 60) -- which sits BEHIND the open
   // sheet (z-index 90/91), so the sheet has to close first or the pushed
@@ -752,6 +1018,7 @@ function renderWeekSheetContent(wk) {
       goBack();
     });
   });
+  wireSheetPushRows(el.sheetBody);
   wireAccordions(el.sheetBody);
   window.wireUpPressFeedback(el.sheetBody);
 }
@@ -799,6 +1066,146 @@ function openTestimonySheet() {
 }
 
 function registerFishSubpages() {
+  // "Setting Up Your Youth Council and Plan a Cycle" -- the shared page
+  // every week's sheet links to instead of repeating its own team-setup
+  // steps inline (see renderWeekSheetContent()). One section per team,
+  // reusing each week's existing (already-translated) teamSteps content --
+  // together they cover "assignments for all the teams" in one place.
+  registerStackPage("fish-youth-council", () => t().fish.youthCouncilNavTitle, (body) => {
+    const d = t().fish;
+    body.innerHTML = `
+      <div class="section" style="padding-top:var(--space-4)">
+        <p class="section-text">${esc(d.youthCouncilPageIntro)}</p>
+        <div class="stack" style="margin-top:var(--space-3)">
+          ${WEEK_ORDER.map((wk) => {
+            const w = d.weeks[wk];
+            return `
+            <div class="card" style="padding:var(--space-4)">
+              <span class="section-label">${esc(w.team)}</span>
+              <h4 style="margin:6px 0 10px">${esc(w.name)}</h4>
+              ${(w.teamSteps || []).map((s, i) => `
+                <div class="list-row"><div class="list-row-num">${i + 1}</div><div class="list-row-body"><p>${esc(s)}</p></div></div>
+              `).join("")}
+            </div>`;
+          }).join("")}
+        </div>
+      </div>`;
+  });
+
+  // "Gospel Presentations" -- the same 4 methods used inside the Hook sheet
+  // (see FEATURED/rest above), as a standalone page so the Hook sheet's
+  // "more ways" nav-row has somewhere to send people on the Resources page
+  // too (joey-edits.md item 9's "Link to Resources Page: Gospel
+  // Presentation"). The Resources tab (task #50) can point its own nav-row
+  // at this same key rather than duplicating the content again.
+  registerStackPage("resources-gospel", () => t().fish.gospelMethodsTitle, (body) => {
+    const d = t().fish;
+    const methods = d.gospelMethods || [];
+    const icons = [ICONS.book, ICONS.arrowUpRight, ICONS.target, ICONS.handshake];
+    body.innerHTML = `
+      <div class="section" style="padding-top:var(--space-4)">
+        <p class="section-text">${esc(d.gospelResourcesIntro)}</p>
+        <div class="stack" style="margin-top:var(--space-3)">
+          ${methods.map((m, i) => `
+            <div class="card" style="padding:var(--space-4)">
+              <div style="display:flex;align-items:center;gap:var(--space-3);margin-bottom:10px">
+                <div class="nav-row-icon">${icons[i] || ICONS.book}</div>
+                <h4 style="margin:0">${esc(m.navTitle)}</h4>
+              </div>
+              ${(m.body || []).map((p) => `<p class="section-text" style="margin-top:8px">${esc(p)}</p>`).join("")}
+            </div>`).join("")}
+        </div>
+      </div>`;
+  });
+
+  // "Ministry team ideas/examples" -- joey-edits.md item 11's second bullet.
+  // Pray/Bless/Serve/Tell already have a generic 3-task list on My Club's
+  // own "team-teams" page; this is deliberately more concrete, one card per
+  // team, grounded in the week each team already leads (see FOCUS/INSPIRE/
+  // SHARE/HOOK's own "Led by ___ Team" subtitle) so a council member can
+  // open it and walk away with something to actually try this week.
+  registerStackPage("resources-team-ideas", () => t().five.libraryTeamIdeasNavTitle, (body) => {
+    const d = t().five;
+    const TEAMS = [
+      { key: "pray", label: "Pray", caption: d.teamIdeasPrayCaption, ideas: d.teamIdeasPray },
+      { key: "bless", label: "Bless", caption: d.teamIdeasBlessCaption, ideas: d.teamIdeasBless },
+      { key: "serve", label: "Serve", caption: d.teamIdeasServeCaption, ideas: d.teamIdeasServe },
+      { key: "tell", label: "Tell", caption: d.teamIdeasTellCaption, ideas: d.teamIdeasTell },
+    ];
+    body.innerHTML = `
+      <div class="section" style="padding-top:var(--space-4)">
+        <p class="section-text">${esc(d.teamIdeasIntro)}</p>
+        <div class="stack" style="margin-top:var(--space-3)">
+          ${TEAMS.map((team) => `
+            <div class="card" style="padding:var(--space-4)">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                <span class="team-pill ${team.key}">${team.label}</span>
+                <span style="font-size:12.5px;color:var(--tg-hint)">${esc(team.caption)}</span>
+              </div>
+              ${(team.ideas || []).map((s, i) => `
+                <div class="list-row"><div class="list-row-num">${i + 1}</div><div class="list-row-body"><p>${esc(s)}</p></div></div>
+              `).join("")}
+            </div>`).join("")}
+        </div>
+      </div>`;
+  });
+
+  // "Other Hook Week ideas" -- joey-edits.md item 11's third bullet. The
+  // Hook pop-up itself already covers "how to run it" (hookTips) and short
+  // "Tips for a Hook Week" (hookWeekTips); this page is deliberately just
+  // MORE event-format ideas, additional to the pop-up's own meetingIdeas
+  // list, not a repeat of it -- so opening this from Resources actually
+  // turns up something new.
+  registerStackPage("resources-hook-ideas", () => t().five.libraryHookIdeasNavTitle, (body) => {
+    const d = t().five;
+    body.innerHTML = `
+      <div class="section" style="padding-top:var(--space-4)">
+        <p class="section-text">${esc(d.hookIdeasIntro)}</p>
+        <div class="card" style="margin-top:var(--space-3);padding:var(--space-4)">
+          ${(d.hookIdeasExtra || []).map((s, i) => `
+            <div class="list-row"><div class="list-row-num">${i + 1}</div><div class="list-row-body"><p>${esc(s)}</p></div></div>
+          `).join("")}
+        </div>
+      </div>`;
+  });
+
+  // "We are in a Battle" -- the vision-casting slide from the FISH Slides
+  // Training deck. Pulled off the hub (same reasoning as Symbol/Connect
+  // below): it's a single scripture-backed paragraph plus a pull-quote,
+  // not something that needs to compete with the week grid for space.
+  registerStackPage("fish-battle", () => t().fish.battleTitle, (body) => {
+    const d = t().fish;
+    body.innerHTML = `
+      <div class="section" style="padding-top:var(--space-4)">
+        <div class="pillar-icon" style="margin-bottom:var(--space-3)">${ICONS.target}</div>
+        <p class="section-text">${esc(d.battleText)}</p>
+        <div class="card" style="padding:var(--space-4);margin-top:var(--space-3)">
+          <p style="font-size:15px;line-height:1.5;font-style:italic;color:var(--ink);margin:0">${esc(d.beliefQuote)}</p>
+        </div>
+      </div>`;
+  });
+
+  // "FISH sermon" -- a condensed outline of the vision-casting talk from
+  // the training deck, for whoever is presenting FISH to a team, a
+  // church, or parents. Five short title/text sections, same accordion-
+  // free "section" shell as the other FISH sub-pages.
+  registerStackPage("fish-sermon", () => t().fish.sermonTitle, (body) => {
+    const d = t().fish;
+    body.innerHTML = `
+      <div class="section" style="padding-top:var(--space-4)">
+        <div class="pillar-icon" style="margin-bottom:var(--space-3)">${ICONS.book}</div>
+        <p class="section-text">${esc(d.sermonIntro)}</p>
+        <div class="stack" style="margin-top:var(--space-3)">
+          ${d.sermonSections.map((s) => `
+            <div class="card" style="padding:var(--space-4)">
+              <h4 style="margin:0 0 8px">${esc(s.title)}</h4>
+              <p class="section-text" style="margin:0">${esc(s.text)}</p>
+            </div>
+          `).join("")}
+        </div>
+      </div>`;
+  });
+
   registerStackPage("fish-symbol", () => t().fish.symbolTitle, (body) => {
     const d = t().fish;
     body.innerHTML = `
@@ -866,12 +1273,13 @@ function renderTeam() {
       </div>
     </div>
 
+    ${renderClubSection(state.me || {}, d)}
+
     ${renderAccountSection()}
 
     <div class="section fade-in">
       <div class="card" style="padding:0 var(--space-4)">
         ${navRow({ icon: ICONS.book, title: d.resourcesTitle, desc: d.resourcesLabel, key: "team-resources" })}
-        ${navRow({ icon: ICONS.users, title: d.structureTitle, desc: d.structureLabel, key: "team-structure" })}
         ${navRow({ icon: ICONS.fish, title: d.teamsTitle, desc: d.teamsLabel, key: "team-teams" })}
         ${navRow({ icon: ICONS.star, title: d.growTitle, desc: d.growLabel, key: "team-grow" })}
       </div>
@@ -879,10 +1287,243 @@ function renderTeam() {
   `;
   wirePushRows(el.pages.team);
   wireAccountSection(el.pages.team);
+  wireClubSection(el.pages.team);
   window.wireUpPressFeedback(el.pages.team);
   staggerIn(el.pages.team, ".nav-row");
   staggerIn(el.pages.team, ".group-row");
   staggerIn(el.pages.team, ".stat-group-row");
+  staggerIn(el.pages.team, ".five-item");
+}
+
+// "My Club" overview -- a leader's own group: a few headline numbers (reusing
+// the exact same signal GET /api/stats already rolls up for coordinators,
+// just self-scoped here via GET /api/club/overview), a low-pressure weekly
+// check-in with its own streak (same gamification idiom as "My 5"'s prayer
+// streak), and the youth council roster. Returns "" for every role except
+// "leader" -- a plain participant/coordinator/admin has no group of their
+// own to show here.
+function renderClubSection(me, d) {
+  if (me.role !== "leader") return "";
+
+  if (!me.group) {
+    return `
+      <div class="section fade-in">
+        <p class="section-label">${esc(d.clubOverviewLabel)}</p>
+        <div class="card" style="padding:var(--space-4)">
+          <p class="section-text" style="margin:0">${esc(d.clubNoGroupNotice)}</p>
+        </div>
+      </div>`;
+  }
+
+  if (state.clubStatus === "idle" || state.clubStatus === "loading") {
+    return `
+      <div class="section fade-in">
+        <p class="section-label">${esc(d.clubOverviewLabel)}</p>
+        <div class="card" style="padding:var(--space-4)">
+          <div class="skeleton" style="width:50%;height:20px"></div>
+          <div class="stat-grid" style="margin-top:var(--space-4)">
+            ${Array(4).fill(0).map(() => `<div class="skeleton" style="height:54px"></div>`).join("")}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  if (state.clubStatus === "error" || !state.club) {
+    return `
+      <div class="section fade-in">
+        <p class="section-label">${esc(d.clubOverviewLabel)}</p>
+        <div class="card" style="padding:var(--space-4)">
+          <p class="section-text" style="margin:0">${esc(d.clubErrorNotice)}</p>
+          <button class="btn secondary tg-press" id="clubRetryBtn" style="margin-top:var(--space-2)">${esc(t().account.retryBtn)}</button>
+        </div>
+      </div>`;
+  }
+
+  const club = state.club;
+  const acc = t().account.stats;
+  const TILE_ACCENTS = [
+    { bg: "var(--focus)", ink: "var(--focus-ink)" },
+    { bg: "var(--inspire)", ink: "var(--inspire-ink)" },
+    { bg: "var(--share)", ink: "#fff" },
+    { bg: "var(--hook)", ink: "var(--hook-ink)" },
+  ];
+  const tileHtml = (value, label, icon, accent) => `
+    <div class="stat-tile">
+      <div class="stat-tile-icon" style="background:${accent.bg};color:${accent.ink}">${icon}</div>
+      <b>${esc(String(value))}</b><span>${esc(label)}</span>
+    </div>`;
+  const statGrid = [
+    tileHtml(club.stats.councilCount, d.councilCountLabel, ICONS.users, TILE_ACCENTS[0]),
+    tileHtml(club.stats.fiveCount, acc.fiveLabel, ICONS.hands, TILE_ACCENTS[1]),
+    tileHtml(club.stats.prayedCount, acc.prayedLabel, ICONS.praying, TILE_ACCENTS[2]),
+    tileHtml(club.stats.invitedCount, acc.invitedLabel, ICONS.invite, TILE_ACCENTS[3]),
+  ].join("");
+
+  const checkinStreakBadge = club.checkinStreak > 0
+    ? `<div class="five-streak" style="margin-top:var(--space-3)">${ICONS.flame}<span>${esc(formatCheckinStreak(club.checkinStreak, d))}</span></div>`
+    : "";
+
+  const checkinBody = club.checkedInThisWeek
+    ? `<div class="checkin-done-badge">${ICONS.check}<span>${esc(d.checkinDoneBadge)}</span></div>`
+    : `
+      <div class="field-stack" style="margin-top:var(--space-3)">
+        <input type="text" id="checkinNoteInput" class="field-input" placeholder="${esc(d.checkinNotePlaceholder)}" maxlength="200" value="${esc(state.checkinNoteDraft || "")}" />
+        <button id="checkinBtn" class="btn full tg-press">${ICONS.calendar}${esc(d.checkinBtn)}</button>
+      </div>`;
+
+  const councilRows = club.council.length
+    ? club.council.map((m) => renderCouncilItem(m, d)).join("")
+    : `<div class="five-empty">${esc(d.councilEmptyState)}</div>`;
+  const councilFull = club.council.length >= 12;
+
+  return `
+    <div class="section fade-in">
+      <p class="section-label">${esc(d.clubOverviewLabel)}</p>
+      <h2 class="display section-title">${esc(club.group.name)}</h2>
+      <div class="stat-grid">${statGrid}</div>
+
+      <div class="card" style="padding:var(--space-4);margin-top:var(--space-3)">
+        <h4 style="margin:0 0 4px">${esc(d.checkinTitle)}</h4>
+        <p class="section-text" style="margin:0">${esc(d.checkinText)}</p>
+        ${checkinBody}
+        ${checkinStreakBadge}
+      </div>
+
+      <p class="section-label" style="margin-top:var(--space-5)">${esc(d.councilSectionLabel)}</p>
+      <h3 class="display section-title" style="font-size:20px">${esc(d.councilSectionTitle)}</h3>
+      <p class="section-text">${esc(d.councilSectionText)}</p>
+      <div class="five-list" id="councilList">${councilRows}</div>
+      ${councilFull
+        ? `<p style="text-align:center;font-size:12.5px;color:var(--tg-hint);margin-top:10px">${esc(d.councilFullState)}</p>`
+        : `
+      <div class="five-add" id="councilAddRow">
+        <input type="text" id="councilInput" placeholder="${esc(d.councilAddPlaceholder)}" maxlength="40" />
+        <button id="councilAddBtn" aria-label="${esc(t().common.add)}">${ICONS.plus}</button>
+      </div>`}
+    </div>`;
+}
+
+function renderCouncilItem(m, d) {
+  const TEAMS = ["pray", "bless", "serve", "tell"];
+  const labelFor = { pray: d.councilTeamPray, bless: d.councilTeamBless, serve: d.councilTeamServe, tell: d.councilTeamTell };
+  const justAdded = state.councilJustAdded === m.id ? " just-toggled" : "";
+  // Stacked layout (name row, then a full-width pill row) rather than
+  // squeezing all 4 team buttons into the narrow strip next to the avatar
+  // -- at phone width + the longer EN/RO labels ("BLESS"/"SERVE"), four
+  // inline pills wrapped onto an ugly second line. Full card width gives
+  // them room on one row across all 4 languages.
+  return `
+    <div class="five-item council-item${justAdded}">
+      <div class="council-item-top">
+        <div class="five-avatar">${esc(initials(m.name))}</div>
+        <div class="five-item-body">
+          <input type="text" value="${esc(m.name)}" readonly />
+        </div>
+        <button class="five-remove tg-press" data-council-remove="${m.id}" aria-label="remove">${ICONS.trash}</button>
+      </div>
+      <div class="team-pill-row">
+        ${TEAMS.map((team) => `
+          <button class="team-select-pill ${team} tg-press" data-council-team data-id="${m.id}" data-team="${team}" data-on="${m.team === team}">${esc(labelFor[team])}</button>
+        `).join("")}
+      </div>
+    </div>`;
+}
+
+function wireClubSection(root) {
+  const retryBtn = document.getElementById("clubRetryBtn");
+  if (retryBtn) retryBtn.addEventListener("click", () => loadClubOverview());
+
+  const checkinBtn = document.getElementById("checkinBtn");
+  if (checkinBtn) {
+    checkinBtn.addEventListener("click", async () => {
+      const noteInput = document.getElementById("checkinNoteInput");
+      const note = noteInput ? noteInput.value.trim() : "";
+      checkinBtn.disabled = true;
+      try {
+        const res = await window.fpApi.checkInClub(note);
+        state.club = {
+          ...state.club,
+          checkins: res.checkins,
+          checkinStreak: res.checkinStreak,
+          checkedInThisWeek: true,
+        };
+        state.checkinNoteDraft = "";
+        renderTeam();
+        if (state.tab === "team") window.wireUpPressFeedback(el.pages.team);
+        toast(t().team.checkinToastSaved, ICONS.check);
+        window.haptic.notification("success");
+        window.sound?.success();
+      } catch (err) {
+        console.error("[first-priority-app] checkInClub failed:", err);
+        toast(t().five.syncError, ICONS.close);
+        window.haptic.notification("error");
+        checkinBtn.disabled = false;
+      }
+    });
+  }
+  const checkinNoteInput = document.getElementById("checkinNoteInput");
+  if (checkinNoteInput) {
+    checkinNoteInput.addEventListener("input", () => { state.checkinNoteDraft = checkinNoteInput.value; });
+  }
+
+  const councilInput = document.getElementById("councilInput");
+  const councilAddBtn = document.getElementById("councilAddBtn");
+  if (councilAddBtn && councilInput) {
+    const doAdd = () => {
+      const name = councilInput.value.trim();
+      if (!name || !state.club || state.club.council.length >= 12) return;
+      const id = uid();
+      state.club.council.push({ id, name, team: null });
+      state.councilJustAdded = id;
+      saveCouncil();
+      renderTeam();
+      state.councilJustAdded = null;
+      if (state.tab === "team") window.wireUpPressFeedback(el.pages.team);
+      toast(t().team.councilToastAdded, ICONS.check);
+      window.haptic.notification("success");
+    };
+    councilAddBtn.addEventListener("click", doAdd);
+    councilInput.addEventListener("keydown", (e) => { if (e.key === "Enter") doAdd(); });
+  }
+
+  root.querySelectorAll("[data-council-team]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const { id, team } = btn.dataset;
+      const m = state.club && state.club.council.find((x) => x.id === id);
+      if (!m) return;
+      // Tap the already-selected team again to clear it, same "toggle"
+      // feel as the "My 5" prayed/invited buttons.
+      m.team = m.team === team ? null : team;
+      saveCouncil();
+      renderTeam();
+      if (state.tab === "team") window.wireUpPressFeedback(el.pages.team);
+      window.haptic.selection();
+    });
+  });
+
+  root.querySelectorAll("[data-council-remove]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (!state.club) return;
+      state.club.council = state.club.council.filter((m) => m.id !== btn.dataset.councilRemove);
+      saveCouncil();
+      renderTeam();
+      if (state.tab === "team") window.wireUpPressFeedback(el.pages.team);
+      toast(t().team.councilToastRemoved, ICONS.trash);
+      window.haptic.impact("light");
+    });
+  });
+}
+
+// Fire-and-forget, same idiom as saveFive() -- the UI already updated
+// optimistically before this is called, so a slow/failed save just logs,
+// it never blocks or rolls back what the leader is looking at.
+async function saveCouncil() {
+  if (!state.club) return;
+  try {
+    await window.fpApi.saveCouncil(state.club.council.map((m) => ({ id: m.id, name: m.name, team: m.team })));
+  } catch (err) {
+    console.error("[first-priority-app] saveCouncil failed:", err);
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -912,12 +1553,44 @@ async function loadMe() {
       await refreshGroups();
       loadStats(); // fire-and-forget: its own status drives its own section, doesn't block the rest of the profile from showing
     }
+    if (state.me.role === "leader" && state.me.group) {
+      loadClubOverview(); // fire-and-forget, same reasoning as loadStats() above
+    }
   } catch (err) {
     console.error("[first-priority-app] loadMe failed:", err);
     state.meStatus = "error";
   }
   renderTeam();
   if (state.tab === "team") window.wireUpPressFeedback(el.pages.team);
+  applyRegistrationGate();
+}
+
+// Decides, once we actually know (meStatus === "loaded"), whether this is a
+// brand-new user who needs the "I'm New" brochure+registration page instead
+// of the normal 4-tab app. Deliberately does nothing while meStatus is
+// still "loading" or "idle" -- boot() already shows Home as the default
+// first paint (see the steps array), and this only redirects away from it
+// once we have a real answer, rather than guessing. On "error" (backend
+// unreachable/cold-starting) or "no-telegram" (dev preview outside
+// Telegram) it also does nothing -- failing OPEN (showing the normal app)
+// is safer than locking someone out of everything because one fetch
+// failed; worst case an unregistered user just sees Home instead of the
+// brochure until the next successful loadMe().
+function applyRegistrationGate() {
+  if (state.meStatus !== "loaded") return;
+  if (!state.me || !state.me.registered) {
+    if (state.tab !== "imnew") switchTab("imnew");
+    return;
+  }
+  // Only auto-release to Home if the user was actually LOCKED on "imnew"
+  // (el.app still carries the "gated" class from the branch above, on an
+  // earlier loadMe()) -- not every time loadMe() happens to re-run while a
+  // already-registered user is simply, deliberately re-reading the
+  // brochure via Home's "back to I'm New" link (e.g. after a Team-tab
+  // retry button or invite redemption re-fetches `me` in the background).
+  if (state.tab === "imnew" && el.app.classList.contains("gated")) {
+    switchTab("home");
+  }
 }
 
 async function refreshGroups() {
@@ -960,6 +1633,27 @@ async function loadStats() {
   // never a re-render triggered by something unrelated later (creating a
   // group, redeeming a code), which would just make the numbers flicker
   // for no reason.
+  if (justLoaded) animateStatTiles(el.pages.team);
+}
+
+// A leader's own club overview: council roster, this group's "My 5" numbers,
+// and the weekly check-in streak -- see GET /api/club/overview. Same
+// independent-status pattern as loadStats() above, just for role "leader"
+// instead of coordinator/admin.
+async function loadClubOverview() {
+  state.clubStatus = "loading";
+  if (state.tab === "team") renderTeam();
+  let justLoaded = false;
+  try {
+    state.club = await window.fpApi.getClubOverview();
+    state.clubStatus = "loaded";
+    justLoaded = true;
+  } catch (err) {
+    console.error("[first-priority-app] loadClubOverview failed:", err);
+    state.clubStatus = "error";
+  }
+  renderTeam();
+  if (state.tab === "team") window.wireUpPressFeedback(el.pages.team);
   if (justLoaded) animateStatTiles(el.pages.team);
 }
 
@@ -1817,6 +2511,23 @@ function formatStreak(n, d) {
   return `${n} ${streakDayWord(n, d)} ${d.streakSuffix}`;
 }
 
+// Same ru/uk 1 / 2-4 / 5+&11-14 agreement split as streakDayWord above, for
+// the My Club weekly check-in streak ("N недель подряд"). `d` here is
+// t().team (the checkinWeek/checkinWeekFew/checkinWeekMany/checkinStreakSuffix
+// fields), not t().five.
+function checkinWeekWord(n, d) {
+  if (CURRENT_LANG === "ru" || CURRENT_LANG === "uk") {
+    const mod10 = n % 10, mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return d.checkinWeek;
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return d.checkinWeekFew;
+    return d.checkinWeekMany;
+  }
+  return n === 1 ? d.checkinWeek : d.checkinWeekMany;
+}
+function formatCheckinStreak(n, d) {
+  return `${n} ${checkinWeekWord(n, d)} ${d.checkinStreakSuffix}`;
+}
+
 // Same agreement-rule split as streakDayWord above, just for "N people
 // prayed" instead of "N days" -- ru/uk need the 1 / 2-4 / 5+&11-14 split,
 // en/ro only ever need singular vs. plural (prayerPersonFew is simply
@@ -1833,18 +2544,6 @@ function personWord(n, d) {
 }
 function formatPrayedCount(n, d) {
   return `${n} ${personWord(n, d)}`;
-}
-
-// Picks a new random verse from the CURRENT language's bank, different
-// from whatever is showing right now (when the bank has more than one
-// verse) -- otherwise "another verse" could silently redraw the same one
-// and look broken to the user tapping the shuffle button.
-function pickRandomVerse(d) {
-  const bank = d.verseBank || [];
-  if (bank.length <= 1) { state.fiveVerseIndex = 0; return; }
-  let next = Math.floor(Math.random() * bank.length);
-  if (next === state.fiveVerseIndex) next = (next + 1) % bank.length;
-  state.fiveVerseIndex = next;
 }
 
 /* ------------------------------------------------------------------ */
@@ -1932,13 +2631,6 @@ function renderFive() {
   const d = t().five;
   const full = state.five.length >= 5;
 
-  // Lazily randomize the verse on first paint, and re-clamp whenever the
-  // language switch leaves the index pointing past a shorter bank (e.g.
-  // ru/en have 12 verses, ro/uk currently have 8) -- see pickRandomVerse().
-  const verseBank = d.verseBank || [];
-  if (state.fiveVerseIndex < 0 || state.fiveVerseIndex >= verseBank.length) pickRandomVerse(d);
-  const verse = verseBank[state.fiveVerseIndex] || { text: d.verse, ref: d.verseRef };
-
   el.pages.five.innerHTML = `
     <div class="section fade-in" style="padding-top:var(--space-6)">
       <div class="five-card" id="fiveHeroCard">
@@ -1964,21 +2656,6 @@ function renderFive() {
       </div>
       ${full ? `<p style="text-align:center;font-size:12.5px;color:var(--tg-hint);margin-top:10px">${esc(d.fullState)}</p>` : ""}
 
-      <div class="card verse-card">
-        <p>${esc(verse.text)}</p>
-        <div class="verse-card-foot">
-          <cite>${esc(verse.ref)}</cite>
-          <button id="fiveVerseNextBtn" class="verse-next-btn tg-press" aria-label="shuffle">${ICONS.shuffle}</button>
-        </div>
-      </div>
-
-      ${state.encouragement ? `
-      <div class="card encouragement-card">
-        <span class="encouragement-kicker">${esc(d.encouragementLabel)}</span>
-        <img src="${esc(state.encouragement.photo_path)}" alt="" class="encouragement-photo" />
-        <p class="encouragement-caption">${esc(state.encouragement.caption)}</p>
-      </div>` : ""}
-
       <div class="card prayer-card">
         <h3 class="prayer-section-title">${esc(d.prayerSectionTitle)}</h3>
         <p class="prayer-section-sub">${esc(d.prayerSectionSub)}</p>
@@ -1997,6 +2674,16 @@ function renderFive() {
           <h4>${esc(d.prayerMineTitle)}</h4>
           ${state.myPrayerNeeds.filter(n => n.active).map(n => renderMyPrayerNeed(n, d)).join("")}
         </div>` : ""}
+      </div>
+
+      <p class="section-label" style="margin-top:var(--space-5)">${esc(d.libraryLabel)}</p>
+      <h2 class="display section-title" style="font-size:20px">${esc(d.libraryTitle)}</h2>
+      <p class="section-text">${esc(d.libraryIntro)}</p>
+      <div class="card" style="padding:0 var(--space-4)">
+        ${navRow({ icon: ICONS.compass2, title: t().fish.gospelMethodsTitle, desc: t().fish.gospelResourcesIntro, key: "resources-gospel" })}
+        ${navRow({ icon: ICONS.handshake, title: d.libraryTeamIdeasNavTitle, desc: d.libraryTeamIdeasNavDesc, key: "resources-team-ideas" })}
+        ${navRow({ icon: ICONS.target, title: d.libraryHookIdeasNavTitle, desc: d.libraryHookIdeasNavDesc, key: "resources-hook-ideas" })}
+        ${navRow({ icon: ICONS.star, title: t().team.growTitle, desc: t().team.growLabel, key: "team-grow" })}
       </div>
     </div>
   `;
@@ -2053,14 +2740,7 @@ function renderFive() {
     });
   });
 
-  const verseNextBtn = document.getElementById("fiveVerseNextBtn");
-  if (verseNextBtn) {
-    verseNextBtn.addEventListener("click", () => {
-      pickRandomVerse(d);
-      renderFive();
-      window.haptic.selection();
-    });
-  }
+  wirePushRows(el.pages.five);
 
   const prayerInput = document.getElementById("prayerInput");
   const prayerSubmitBtn = document.getElementById("prayerSubmitBtn");
@@ -2236,6 +2916,7 @@ function toast(msg, iconSvg) {
 
 function renderAll() {
   renderNav();
+  renderImNew();
   renderHome();
   renderFish();
   renderTeam();
@@ -2290,11 +2971,14 @@ async function boot() {
 
   // Same independence guarantee as loadFive/loadMe above: the prayer board,
   // the "my needs" list, and the encouragements card are all optional
-  // extras on the "My 5" tab -- any one of them failing (or the backend
-  // still cold-starting) must never block the other two, or the five-list
-  // itself, from rendering.
+  // extras -- any one of them failing (or the backend still cold-starting)
+  // must never block the others from rendering. loadEncouragement() now
+  // also feeds Home's encouragement card (moved there from Five per the
+  // "move encouragements/verses off Team" edit -- they actually lived on
+  // Five, not Team, but the intent is the same), so renderHome() needs the
+  // same re-render once it resolves.
   Promise.all([loadPrayerFeed(), loadMyPrayerNeeds(), loadEncouragement()])
-    .then(() => renderFive())
+    .then(() => { renderFive(); renderHome(); })
     .catch((err) => console.error("[first-priority-app] My 5 extras chain failed:", err));
 
   // Each step runs independently: one throwing (a bad translation key, a
@@ -2305,6 +2989,7 @@ async function boot() {
   const steps = [
     () => history.replaceState({ depth: 0 }, "", location.pathname + location.search),
     renderTabBg,
+    registerImNewSubpages,
     registerHomeSubpages,
     registerFishSubpages,
     registerTeamSubpages,
