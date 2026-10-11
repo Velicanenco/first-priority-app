@@ -73,6 +73,8 @@
 
   window.fpApi = {
     me: () => apiFetch("/api/me"),
+    register: (first_name, church, city, country) =>
+      apiFetch("/api/me/register", { method: "POST", body: { first_name, church, city, country } }),
     redeemInvite: (code) => apiFetch("/api/invites/redeem", { method: "POST", body: { code } }),
     listGroups: () => apiFetch("/api/groups"),
     createGroup: (name, country) => apiFetch("/api/groups", { method: "POST", body: { name, country } }),
@@ -81,6 +83,9 @@
     inviteNationalCoordinator: (country) => apiFetch("/api/invites/national-coordinator", { method: "POST", body: { country } }),
     getFive: () => apiFetch("/api/five"),
     saveFive: (entries) => apiFetch("/api/five", { method: "PUT", body: { entries } }),
+    getClubOverview: () => apiFetch("/api/club/overview"),
+    saveCouncil: (members) => apiFetch("/api/club/council", { method: "PUT", body: { members } }),
+    checkInClub: (note) => apiFetch("/api/club/checkin", { method: "POST", body: { note } }),
     getStats: () => apiFetch("/api/stats"),
     getGroupStats: (groupId) => apiFetch("/api/stats/group/" + encodeURIComponent(groupId)),
     submitPrayerNeed: (text) => apiFetch("/api/prayer-needs", { method: "POST", body: { text } }),
