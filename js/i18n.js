@@ -56,6 +56,9 @@ ru: {
     exploreLabel: "Узнать больше", exploreTitle: "О служении",
     ctaLabel: "Дальше", ctaTitle: "Готовы узнать, как это работает?",
     ctaText: "Откройте вкладку FISH — там разобран весь цикл по неделям, командам и ролям.",
+    // Hero action pills under the "I'm New" hero (see Joey's Canva mockup).
+    createProfileBtn: "Создать профиль",
+    learnAboutBtn: "Узнать о FP",
   },
   // Home — только для уже зарегистрированных (см. applyRegistrationGate()).
   // Не брошюра: короткая живая лента (ободрения/обновления + стих дня) плюс
@@ -90,6 +93,16 @@ ru: {
     ],
     ctaLabel: "Дальше", ctaTitle: "Готовы узнать, как это работает?",
     ctaText: "Откройте вкладку FISH — там разобран весь цикл по неделям, командам и ролям.",
+    // Hero action pills + "Quick Links" grid (see Joey's Canva mockup).
+    heroCtaPrimary: "Обновления",
+    heroCtaSecondary: "Я новенький",
+    storySectionLabel: "История",
+    quickLinksLabel: "Быстрые ссылки",
+    quickLinkMy5Title: "Мои 5",
+    quickLinkMy5Desc: "Добавь своих друзей",
+    quickLinkHelpTitle: "Нужна помощь",
+    quickLinkHelpDesc: "Написать Джоуи",
+    quickLinkGospelTitle: "Евангелие",
   },
   fish: {
     heroRibbon: "ЦИКЛ",
@@ -670,6 +683,9 @@ en: {
     exploreLabel: "Learn more", exploreTitle: "About the ministry",
     ctaLabel: "Next", ctaTitle: "Ready to see how it works?",
     ctaText: "Open the FISH tab — the whole cycle is broken down by week, team and role.",
+    // Hero action pills under the "I'm New" hero (see Joey's Canva mockup).
+    createProfileBtn: "Create your profile",
+    learnAboutBtn: "Learn about FP",
   },
   home: {
     heroRibbon: "WELCOME BACK", heroTitle: "Good to see you again",
@@ -700,6 +716,16 @@ en: {
     ],
     ctaLabel: "Next", ctaTitle: "Ready to see how it works?",
     ctaText: "Open the FISH tab — the whole cycle is broken down by week, team and role.",
+    // Hero action pills + "Quick Links" grid (see Joey's Canva mockup).
+    heroCtaPrimary: "Updates",
+    heroCtaSecondary: "I'm new here",
+    storySectionLabel: "Story",
+    quickLinksLabel: "Quick Links",
+    quickLinkMy5Title: "My 5",
+    quickLinkMy5Desc: "Add your friends",
+    quickLinkHelpTitle: "I need help",
+    quickLinkHelpDesc: "Message Joey",
+    quickLinkGospelTitle: "Gospel",
   },
   fish: {
     heroRibbon: "CYCLE",
@@ -1275,6 +1301,9 @@ ro: {
     exploreLabel: "Află mai mult", exploreTitle: "Despre slujire",
     ctaLabel: "Continuă", ctaTitle: "Gata să vezi cum funcționează?",
     ctaText: "Deschide tab-ul FISH — acolo este explicat întregul ciclu, pe săptămâni, echipe și roluri.",
+    // Hero action pills under the "I'm New" hero (see Joey's Canva mockup).
+    createProfileBtn: "Creează-ți profilul",
+    learnAboutBtn: "Află despre FP",
   },
   home: {
     heroRibbon: "BINE AI REVENIT", heroTitle: "Ne bucurăm să te revedem",
@@ -1305,6 +1334,16 @@ ro: {
     ],
     ctaLabel: "Continuă", ctaTitle: "Gata să vezi cum funcționează?",
     ctaText: "Deschide tab-ul FISH — acolo este explicat întregul ciclu, pe săptămâni, echipe și roluri.",
+    // Hero action pills + "Quick Links" grid (see Joey's Canva mockup).
+    heroCtaPrimary: "Actualizări",
+    heroCtaSecondary: "Sunt nou aici",
+    storySectionLabel: "Poveste",
+    quickLinksLabel: "Linkuri rapide",
+    quickLinkMy5Title: "Cei 5 ai mei",
+    quickLinkMy5Desc: "Adaugă-ți prietenii",
+    quickLinkHelpTitle: "Am nevoie de ajutor",
+    quickLinkHelpDesc: "Scrie-i lui Joey",
+    quickLinkGospelTitle: "Evanghelia",
   },
   fish: {
     heroRibbon: "CICLUL",
@@ -1881,6 +1920,9 @@ uk: {
     exploreLabel: "Дізнатися більше", exploreTitle: "Про служіння",
     ctaLabel: "Далі", ctaTitle: "Готові дізнатися, як це працює?",
     ctaText: "Відкрийте вкладку FISH — там розібрано весь цикл за тижнями, командами й ролями.",
+    // Hero action pills under the "I'm New" hero (see Joey's Canva mockup).
+    createProfileBtn: "Створити профіль",
+    learnAboutBtn: "Дізнатися про FP",
   },
   home: {
     heroRibbon: "З ПОВЕРНЕННЯМ", heroTitle: "Раді бачити тебе знову",
@@ -1911,6 +1953,16 @@ uk: {
     ],
     ctaLabel: "Далі", ctaTitle: "Готові дізнатися, як це працює?",
     ctaText: "Відкрийте вкладку FISH — там розібрано весь цикл за тижнями, командами й ролями.",
+    // Hero action pills + "Quick Links" grid (see Joey's Canva mockup).
+    heroCtaPrimary: "Оновлення",
+    heroCtaSecondary: "Я новенький",
+    storySectionLabel: "Історія",
+    quickLinksLabel: "Швидкі посилання",
+    quickLinkMy5Title: "Мої 5",
+    quickLinkMy5Desc: "Додай своїх друзів",
+    quickLinkHelpTitle: "Потрібна допомога",
+    quickLinkHelpDesc: "Написати Джоуі",
+    quickLinkGospelTitle: "Євангеліє",
   },
   fish: {
     heroRibbon: "ЦИКЛ",
