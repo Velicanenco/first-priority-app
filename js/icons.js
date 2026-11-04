@@ -53,6 +53,17 @@ const ICONS = {
   download: `<svg viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
   externalOpen: `<svg viewBox="0 0 24 24" fill="none"><path d="M9 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 4h6v6M20 4l-9 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   plus: `<svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/></svg>`,
+  // Dashed circle + plus -- used on the "Share your story" CTA (see Joey's
+  // Canva mockup's quick-links/CTA row). Distinct from the plain `plus`
+  // glyph above (used for the "add a My 5 entry" field) so the two don't
+  // look interchangeable despite both being "+" shapes.
+  plusCircle: `<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" stroke-dasharray="3 3"/><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  // Simple globe (meridian lines over a circle) -- used for the "Gospel"
+  // quick-link tile (see Joey's Canva mockup).
+  globe: `<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.5 3.8 5.8 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.8-3.8-9S9.5 5.5 12 3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`,
+  // Small figure with one arm raised -- used for the "I need help" quick-
+  // link tile (see Joey's Canva mockup).
+  raisedHand: `<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="5" r="2.3" stroke="currentColor" stroke-width="1.8"/><path d="M12 7.3v7M12 9l4-3.3M12 10.5 8 13M12 14.3 9 20M12 14.3l3.5 5.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   trash: `<svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m-8 0 1 12.5A1.5 1.5 0 0 0 8.5 21h7a1.5 1.5 0 0 0 1.5-1.5L18 7" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   praying: `<svg viewBox="0 0 24 24" fill="none"><path d="M12 2v6M12 8c-1 0-1.6.8-1.6 1.8V15M12 8c1 0 1.6.8 1.6 1.8V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 21c0-3 1.8-5 4-5s4 2 4 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
   flame: `<svg viewBox="0 0 24 24" fill="none"><path d="M12 2.5c.6 2.3-.5 3.7-1.8 5.1C8.7 9 7 10.8 7 13.5a5 5 0 0 0 10 0c0-1.4-.5-2.4-1.1-3.3-.2 1.3-.9 2-1.6 2-.9 0-1.4-.8-1.1-1.8.5-1.9-.2-3.6-1.2-4.9Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`,
