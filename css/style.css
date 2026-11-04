@@ -1432,6 +1432,61 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
 }
 .prayer-mine-delete svg { width: 13px; height: 13px; }
 
+/* ---------------------------------------------------------------------- */
+/* Hero action pills (Home / I'm New) — see Joey's Canva mockup: a small   */
+/* row of 1-2 pill buttons directly under the hero, instead of the only    */
+/* entry point being a single CTA card further down the page.              */
+/* ---------------------------------------------------------------------- */
+
+.hero-actions { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-3); flex-wrap: wrap; }
+.hero-actions .btn { padding: 11px 18px; }
+
+/* Orange CTA button ("Share your story") -- reuses the FISH Hook week's
+   accent color (--hook) rather than inventing a new brand color, since the
+   mockup's orange is already close to it and this keeps the palette to
+   the one the rest of the app already uses. */
+.btn.cta-orange { background: var(--hook); color: var(--hook-ink); }
+.btn.cta-orange svg { width: 17px; height: 17px; }
+
+/* ---------------------------------------------------------------------- */
+/* Quick Links grid (Home) — My 5 / I Need Help (wide cards) + FAQ /       */
+/* Gospel / Prayer (square tiles) — see Joey's Canva mockup.                */
+/* ---------------------------------------------------------------------- */
+
+.quick-links { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); margin-top: var(--space-3); }
+.quick-link-card {
+  text-align: left;
+  background: var(--tg-secondary-bg);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  min-height: 112px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.quick-link-badge {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 16px;
+}
+.quick-link-badge svg { width: 18px; height: 18px; }
+.quick-link-card h4 { font-size: 14px; margin: 10px 0 2px; }
+.quick-link-card p { font-size: 12px; color: var(--tg-hint); margin: 0; line-height: 1.35; }
+
+.quick-links-row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); margin-top: var(--space-3); }
+.quick-link-tile {
+  background: var(--tg-secondary-bg);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-2);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  text-align: center;
+}
+.quick-link-tile svg { width: 21px; height: 21px; color: var(--ink); }
+.quick-link-tile span { font-size: 10.5px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; }
+
 /* toast */
 #toast {
   position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom, 0px));
@@ -1448,7 +1503,9 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
 /* FAQ floating button -- pinned to the viewport (not the page), so it
    stays in place while the Home page scrolls underneath it, like the tab
    bar and #toast above. Sits just above the tab bar, clear of the home
-   indicator / nav-bar safe areas on both axes. */
+   indicator / nav-bar safe areas on both axes. Home no longer uses this
+   (FAQ moved into the Quick Links grid, see above) -- kept defined in
+   case another page still references the class. */
 .faq-fab {
   position: fixed;
   right: var(--space-4);
@@ -1469,4 +1526,3 @@ main { flex: 1; padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
     transition-duration: 0.01ms !important;
   }
 }
-
