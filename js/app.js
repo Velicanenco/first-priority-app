@@ -16,6 +16,20 @@
 const ASSET_V = "20261002a";
 function heroSrc(file) { return `assets/img/${file}?v=${ASSET_V}`; }
 
+// "I need help" quick-link (see renderHome's Quick Links grid, from Joey's
+// Canva mockup) -- opens a Telegram chat with this person. One contact for
+// every language/country for now (per Joey: "там сам реши").
+const TELEGRAM_HELP_USERNAME = "joeyproffitt";
+function openTelegramHelp() {
+  const url = `https://t.me/${TELEGRAM_HELP_USERNAME}`;
+  // Prefer Telegram's own in-app link opener (keeps the user inside
+  // Telegram instead of bouncing out to a system browser tab) -- falls
+  // back to a plain new tab outside Telegram (e.g. testing in a desktop
+  // browser, where window.__tg has no openTelegramLink).
+  if (window.__tg?.openTelegramLink) window.__tg.openTelegramLink(url);
+  else window.open(url, "_blank");
+}
+
 const state = {
   tab: "home",
   five: [],
@@ -446,6 +460,14 @@ function renderImNew() {
       </div>
     </div>
 
+    ${!registered ? `
+    <div class="section fade-in" style="padding-bottom:0">
+      <div class="hero-actions">
+        <button id="imNewCreateProfileBtn" class="btn tg-press">${esc(d.createProfileBtn)}</button>
+        <button id="imNewLearnAboutBtn" class="btn secondary tg-press">${esc(d.learnAboutBtn)}</button>
+      </div>
+    </div>` : ""}
+
     <div class="section fade-in">
       <p class="section-label">${esc(d.registerLabel)}</p>
       <h2 class="display section-title">${esc(d.registerTitle)}</h2>
@@ -502,6 +524,10 @@ function renderImNew() {
     if (registered) switchTab("fish");
     else document.getElementById("imNewName")?.focus();
   });
+  document.getElementById("imNewCreateProfileBtn")?.addEventListener("click", () => {
+    document.getElementById("imNewName")?.focus();
+  });
+  document.getElementById("imNewLearnAboutBtn")?.addEventListener("click", () => pushPage("home-about"));
   if (!registered) wireImNewRegisterForm();
   wirePushRows(el.pages.imnew);
   window.wireUpPressFeedback(el.pages.imnew);
@@ -607,6 +633,13 @@ function renderHome() {
       </div>
     </div>
 
+    <div class="section fade-in" style="padding-bottom:0">
+      <div class="hero-actions">
+        <button id="homeHeroPrimaryBtn" class="btn tg-press">${esc(d.heroCtaPrimary)}</button>
+        <button id="homeHeroSecondaryBtn" class="btn secondary tg-press">${esc(d.heroCtaSecondary)}</button>
+      </div>
+    </div>
+
     ${verse ? `
     <div class="section fade-in">
       <p class="section-label">${esc(d.verseLabel)}</p>
@@ -616,8 +649,8 @@ function renderHome() {
       </div>
     </div>` : ""}
 
-    <div class="section fade-in">
-      <p class="section-label">${esc(d.updatesLabel)}</p>
+    <div class="section fade-in" id="homeStoryAnchor">
+      <p class="section-label">${esc(d.storySectionLabel)}</p>
       <h2 class="display section-title">${esc(d.updatesTitle)}</h2>
       ${state.encouragement ? `
       <div class="card encouragement-card">
@@ -625,25 +658,27 @@ function renderHome() {
         <img src="${esc(state.encouragement.photo_path)}" alt="" class="encouragement-photo" />
         <p class="encouragement-caption">${esc(state.encouragement.caption)}</p>
       </div>` : ""}
-      <button id="homeShareStoryBtn" class="btn secondary full tg-press" style="margin-top:var(--space-2)">${esc(d.shareStoryBtn)}</button>
+      <button id="homeShareStoryBtn" class="btn full tg-press cta-orange" style="margin-top:var(--space-2)">${ICONS.plusCircle}${esc(d.shareStoryBtn)}</button>
     </div>
 
     <div class="section fade-in">
-      <div class="card" style="padding:0 var(--space-4)">
-        <button class="nav-row tg-press" id="homeImNewRow">
-          <div class="nav-row-icon">${ICONS.heart}</div>
-          <div class="nav-row-body"><h4>${esc(d.imNewTitle)}</h4><p>${esc(d.imNewLabel)}</p></div>
-          ${ICONS.chevronRight}
+      <p class="section-label">${esc(d.quickLinksLabel)}</p>
+      <div class="quick-links">
+        <button class="quick-link-card tg-press" id="qlMy5">
+          <div class="quick-link-badge">5</div>
+          <h4>${esc(d.quickLinkMy5Title)}</h4>
+          <p>${esc(d.quickLinkMy5Desc)}</p>
+        </button>
+        <button class="quick-link-card tg-press" id="qlHelp">
+          <div class="quick-link-badge">${ICONS.raisedHand}</div>
+          <h4>${esc(d.quickLinkHelpTitle)}</h4>
+          <p>${esc(d.quickLinkHelpDesc)}</p>
         </button>
       </div>
-    </div>
-
-    <div class="section fade-in">
-      <p class="section-label">${esc(d.prayerLabel)}</p>
-      <h2 class="display section-title">${esc(d.prayerTitle)}</h2>
-      <div class="card" style="padding:var(--space-4)">
-        <p class="section-text">${esc(d.prayerText)}</p>
-        <button id="homePrayerBtn" class="btn full tg-press" style="margin-top:var(--space-2)">${esc(d.prayerBtn)}</button>
+      <div class="quick-links-row3">
+        <button class="quick-link-tile tg-press" id="qlFaq">${ICONS.help}<span>${esc(d.faqTitle)}</span></button>
+        <button class="quick-link-tile tg-press" id="qlGospel">${ICONS.globe}<span>${esc(d.quickLinkGospelTitle)}</span></button>
+        <button class="quick-link-tile tg-press" id="qlPrayer">${ICONS.praying}<span>${esc(d.prayerLabel)}</span></button>
       </div>
     </div>
 
@@ -653,22 +688,26 @@ function renderHome() {
         <cite>${esc(d.ctaText)}</cite>
       </div>
     </div>
-
-    <button class="faq-fab tg-press" id="homeFaqFab" aria-label="${esc(d.faqTitle)}" title="${esc(d.faqTitle)}">
-      ${ICONS.help}
-    </button>
   `;
   document.getElementById("homeCta").addEventListener("click", () => switchTab("fish"));
-  document.getElementById("homeImNewRow").addEventListener("click", () => switchTab("imnew"));
-  document.getElementById("homePrayerBtn").addEventListener("click", () => switchTab("five"));
   document.getElementById("homeShareStoryBtn").addEventListener("click", () => pushPage("home-share-story"));
-  // Standalone floating button rather than another row buried in a list --
-  // FAQ is about using the app itself, so it gets its own always-visible
-  // entry point. position:fixed (not absolute), so it stays pinned to the
-  // viewport as Home scrolls underneath it, same mechanism as the tab bar.
-  document.getElementById("homeFaqFab").addEventListener("click", () => pushPage("home-faq"));
+  document.getElementById("homeHeroPrimaryBtn").addEventListener("click", () => {
+    document.getElementById("homeStoryAnchor")?.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "start" });
+  });
+  document.getElementById("homeHeroSecondaryBtn").addEventListener("click", () => switchTab("imnew"));
+  // Quick Links grid (see Joey's Canva mockup) -- My 5 and Prayer both land
+  // on the Five/Resources tab (that's where the My 5 list AND the shared
+  // prayer-needs feed both live, see state.prayerFeed); Gospel reuses the
+  // same "Gospel Presentations" page the FISH → Hook sheet already links
+  // to, so the content isn't duplicated anywhere.
+  document.getElementById("qlMy5").addEventListener("click", () => switchTab("five"));
+  document.getElementById("qlHelp").addEventListener("click", openTelegramHelp);
+  document.getElementById("qlFaq").addEventListener("click", () => pushPage("home-faq"));
+  document.getElementById("qlGospel").addEventListener("click", () => pushPage("resources-gospel"));
+  document.getElementById("qlPrayer").addEventListener("click", () => switchTab("five"));
   window.wireUpPressFeedback(el.pages.home);
-  staggerIn(el.pages.home, ".nav-row");
+  staggerIn(el.pages.home, ".quick-link-card");
+  staggerIn(el.pages.home, ".quick-link-tile");
 }
 
 function registerHomeSubpages() {
